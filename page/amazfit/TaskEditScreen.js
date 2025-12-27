@@ -2,6 +2,7 @@ import hmUI, { setStatusBarVisible, updateStatusBarTitle } from "@zos/ui";
 import { replace, push, back } from "@zos/router";
 import { setWakeUpRelaunch, setPageBrightTime } from "@zos/display";
 import { setScrollMode } from "@zos/page";
+import { Geolocation } from "@zos/sensor";
 import {ListScreen} from "../../lib/mmk/ListScreen";
 import {ScreenBoard} from "../../lib/mmk/ScreenBoard";
 import {DateTimePicker} from "../../lib/mmk/DateTimePicker";
@@ -869,40 +870,17 @@ class TaskEditScreen extends ListScreen {
     this.isSaving = true;
     this.locationRow.setText(t("Getting GPS…"));
 
-    // Try hmSensor API (available on most devices)
+    // API 3.0: Use Geolocation from @zos/sensor
     let geolocation = null;
 
-    log("=== GPS Capture Start ===");
+    log("=== GPS Capture Start (API 3.0) ===");
 
     try {
-      if (typeof hmSensor !== 'undefined' && hmSensor.id) {
-        // Check available sensor IDs
-        const sensorIds = Object.keys(hmSensor.id);
-        log("Available sensors:", sensorIds.join(', '));
-
-        // Try GEOLOCATION first
-        if (hmSensor.id.GEOLOCATION !== undefined) {
-          log("GEOLOCATION id:", hmSensor.id.GEOLOCATION);
-          geolocation = hmSensor.createSensor(hmSensor.id.GEOLOCATION);
-          log("Created GEOLOCATION sensor");
-        }
-        // Some devices might use GPS instead
-        else if (hmSensor.id.GPS !== undefined) {
-          log("GPS id:", hmSensor.id.GPS);
-          geolocation = hmSensor.createSensor(hmSensor.id.GPS);
-          log("Created GPS sensor");
-        } else {
-          log("No GEOLOCATION or GPS in sensor IDs");
-        }
-      } else {
-        log("hmSensor not available");
-      }
+      geolocation = new Geolocation();
+      log("Geolocation instance created");
     } catch(e) {
-      log("Sensor creation error:", e.message || e);
-    }
-    flushLog();
-
-    if (!geolocation) {
+      log("Geolocation creation error:", e.message || e);
+      flushLog();
       this.isSaving = false;
       this.locationRow.setText(this.task.geo ? t("Update location") : t("Add current location"));
       hmUI.showToast({ text: t("GPS not available") });
@@ -915,77 +893,53 @@ class TaskEditScreen extends ListScreen {
     const onGPSData = () => {
       if (acquired) return;
 
-      // Log sensor object properties for debugging
-      log("Sensor props:", Object.keys(geolocation).join(', '));
+      try {
+        // API 3.0: Check status - 'A' means positioning in progress, 'V' means invalid
+        const status = geolocation.getStatus();
+        log("GPS status:", status);
 
-      // Try different property names that different API versions might use
-      let lat = geolocation.latitude;
-      let lon = geolocation.longitude;
+        if (status === 'A') {
+          // API 3.0: Get coordinates using methods
+          const lat = geolocation.getLatitude();
+          const lon = geolocation.getLongitude();
 
-      // Log raw values and their types
-      log("Raw lat type:", typeof lat, "value:", JSON.stringify(lat));
-      log("Raw lon type:", typeof lon, "value:", JSON.stringify(lon));
+          log("GPS data: lat=" + lat + " lon=" + lon + " (type: " + typeof lat + ", " + typeof lon + ")");
+          flushLog();
 
-      // Convert DMS (Degrees, Minutes, Seconds) to decimal degrees
-      function dmsToDecimal(dms) {
-        if (!dms || typeof dms !== 'object') return dms;
-        if (dms.degrees === undefined) return dms;
+          // Check if we have valid numeric coordinates
+          if (lat !== undefined && lat !== null && lon !== undefined && lon !== null &&
+              typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon) &&
+              (lat !== 0 || lon !== 0)) {
+            acquired = true;
+            if (timeoutId) clearTimeout(timeoutId);
 
-        let decimal = Math.abs(dms.degrees) + (dms.minutes || 0) / 60 + (dms.seconds || 0) / 3600;
+            try {
+              geolocation.stop();
+              log("GPS stopped successfully");
+            } catch(e) {
+              log("Error stopping GPS:", e.message || e);
+            }
 
-        // Handle direction: S and W are negative
-        if (dms.direction === 'S' || dms.direction === 'W') {
-          decimal = -decimal;
+            console.log("GPS acquired:", lat, lon);
+            this.saveLocation(lat, lon);
+          } else {
+            log("Invalid GPS data - waiting for valid coordinates");
+          }
+        } else {
+          log("GPS not ready yet - status:", status);
         }
-        return decimal;
+      } catch(e) {
+        log("Error reading GPS data:", e.message || e);
       }
-
-      // If lat/lon are objects (DMS format), convert to decimal
-      if (lat && typeof lat === 'object') {
-        lat = dmsToDecimal(lat);
-        log("Converted lat:", lat);
-      }
-      if (lon && typeof lon === 'object') {
-        lon = dmsToDecimal(lon);
-        log("Converted lon:", lon);
-      }
-
-      // Some APIs might use getLatitude/getLongitude methods
-      if ((lat === undefined || lat === null || typeof lat === 'object') && typeof geolocation.getLatitude === 'function') {
-        lat = geolocation.getLatitude();
-        lon = geolocation.getLongitude();
-        log("From methods: lat=", lat, "lon=", lon);
-      }
-
-      log("Final GPS data: lat=" + lat + " lon=" + lon);
       flushLog();
-
-      // Check if we have valid coordinates
-      if (lat !== undefined && lon !== undefined && lat !== null && lon !== null && (lat !== 0 || lon !== 0)) {
-        acquired = true;
-        if (timeoutId) clearTimeout(timeoutId);
-
-        try {
-          geolocation.stop();
-        } catch(e) {
-          console.log("Error stopping GPS:", e);
-        }
-
-        console.log("GPS acquired:", lat, lon);
-        this.saveLocation(lat, lon);
-      }
     };
 
     try {
-      // Start GPS
+      // API 3.0: Start GPS and register callback
       geolocation.start();
-
-      // Register callback - try different event names
-      if (typeof geolocation.onChange === 'function') {
-        geolocation.onChange(onGPSData);
-      } else if ('onGPS' in geolocation) {
-        geolocation.onGPS = onGPSData;
-      }
+      geolocation.onChange(onGPSData);
+      log("GPS started, waiting for data...");
+      flushLog();
 
       // Check immediately in case data is already available
       setTimeout(() => onGPSData(), 500);
@@ -995,7 +949,11 @@ class TaskEditScreen extends ListScreen {
         if (!acquired) {
           try {
             geolocation.stop();
-          } catch(e) {}
+            log("GPS timeout - stopped");
+          } catch(e) {
+            log("Error stopping GPS on timeout:", e.message || e);
+          }
+          flushLog();
           this.isSaving = false;
           this.locationRow.setText(this.task.geo ? t("Update location") : t("Add current location"));
           hmUI.showToast({ text: t("GPS timeout") });
@@ -1003,10 +961,11 @@ class TaskEditScreen extends ListScreen {
       }, 30000);
 
     } catch(e) {
-      console.log("GPS start error:", e);
+      log("GPS start error:", e.message || e);
+      flushLog();
       this.isSaving = false;
       this.locationRow.setText(this.task.geo ? t("Update location") : t("Add current location"));
-      hmUI.showToast({ text: t("GPS error: ") + e.message });
+      hmUI.showToast({ text: t("GPS error: ") + (e.message || e));
     }
   }
 
