@@ -79,9 +79,12 @@ class TaskEditScreen extends ListScreen {
    * Reload the edit screen to show updated data
    */
   reloadEditScreen() {
+    const paramObj = { list_id: this.listId, task_id: this.taskId };
+    // Store params in config as workaround for API 3.0 replace() not passing params
+    config.set("_editTaskParams", paramObj);
     replace({
       url: "page/amazfit/TaskEditScreen",
-      param: JSON.stringify({ list_id: this.listId, task_id: this.taskId })
+      param: JSON.stringify(paramObj)
     });
   }
 
