@@ -11,7 +11,24 @@ class CategoryPickerScreen extends ConfiguredListScreen {
   constructor(param) {
     super();
 
-    param = JSON.parse(param);
+    try {
+      // Handle undefined, null, empty string, or literal "undefined" string
+      param = (param && param !== "undefined") ? JSON.parse(param) : {};
+    } catch(e) {
+      console.log("CategoryPickerScreen param parse error:", e);
+      param = {};
+    }
+
+    // Fallback: read from config if push() didn't pass params (API 3.0 issue)
+    if (!param.listId || !param.taskId) {
+      const savedParams = config.get("_categoryPickerParams");
+      if (savedParams) {
+        console.log("CategoryPickerScreen: Using params from config:", JSON.stringify(savedParams));
+        param = savedParams;
+        config.set("_categoryPickerParams", null); // Clear after use
+      }
+    }
+
     this.listId = param.listId;
     this.taskId = param.taskId;
     this.currentCategories = param.currentCategories || [];
@@ -128,13 +145,16 @@ class CategoryPickerScreen extends ConfiguredListScreen {
     config.set("userCategories", remaining);
 
     // Reload page with empty selection
+    const paramObj = {
+      listId: this.listId,
+      taskId: this.taskId,
+      currentCategories: []
+    };
+    // Store params in config as workaround for API 3.0 replace() not passing params
+    config.set("_categoryPickerParams", paramObj);
     replace({
       url: "page/amazfit/CategoryPickerScreen",
-      param: JSON.stringify({
-        listId: this.listId,
-        taskId: this.taskId,
-        currentCategories: []
-      })
+      param: JSON.stringify(paramObj)
     });
   }
 
@@ -162,13 +182,16 @@ class CategoryPickerScreen extends ConfiguredListScreen {
     this.selected.push(name);
 
     // Reload page to show new category
+    const paramObj = {
+      listId: this.listId,
+      taskId: this.taskId,
+      currentCategories: this.selected
+    };
+    // Store params in config as workaround for API 3.0 replace() not passing params
+    config.set("_categoryPickerParams", paramObj);
     replace({
       url: "page/amazfit/CategoryPickerScreen",
-      param: JSON.stringify({
-        listId: this.listId,
-        taskId: this.taskId,
-        currentCategories: this.selected
-      })
+      param: JSON.stringify(paramObj)
     });
   }
 

@@ -714,13 +714,16 @@ class TaskEditScreen extends ListScreen {
   }
 
   showCategoryPicker() {
+    const paramObj = {
+      listId: this.listId,
+      taskId: this.taskId,
+      currentCategories: this.task.categories || []
+    };
+    // Store params in config as workaround for API 3.0 push() not passing params
+    config.set("_categoryPickerParams", paramObj);
     push({
       url: "page/amazfit/CategoryPickerScreen",
-      param: JSON.stringify({
-        listId: this.listId,
-        taskId: this.taskId,
-        currentCategories: this.task.categories || []
-      })
+      param: JSON.stringify(paramObj)
     });
   }
 
