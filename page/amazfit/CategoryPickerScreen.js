@@ -1,5 +1,5 @@
 import hmUI, { setStatusBarVisible, updateStatusBarTitle } from "@zos/ui";
-import { reloadPage, back } from "@zos/router";
+import { replace, back } from "@zos/router";
 import { setScrollMode } from "@zos/page";
 import {ConfiguredListScreen} from "../ConfiguredListScreen";
 import {ScreenBoard} from "../../lib/mmk/ScreenBoard";
@@ -128,7 +128,7 @@ class CategoryPickerScreen extends ConfiguredListScreen {
     config.set("userCategories", remaining);
 
     // Reload page with empty selection
-    reloadPage({
+    replace({
       url: "page/amazfit/CategoryPickerScreen",
       param: JSON.stringify({
         listId: this.listId,
@@ -162,7 +162,7 @@ class CategoryPickerScreen extends ConfiguredListScreen {
     this.selected.push(name);
 
     // Reload page to show new category
-    reloadPage({
+    replace({
       url: "page/amazfit/CategoryPickerScreen",
       param: JSON.stringify({
         listId: this.listId,

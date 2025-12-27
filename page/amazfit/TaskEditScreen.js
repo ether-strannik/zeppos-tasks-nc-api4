@@ -1,5 +1,5 @@
 import hmUI, { setStatusBarVisible, updateStatusBarTitle } from "@zos/ui";
-import { reloadPage, push, back } from "@zos/router";
+import { replace, push, back } from "@zos/router";
 import { setWakeUpRelaunch, setPageBrightTime } from "@zos/display";
 import { setScrollMode } from "@zos/page";
 import {ListScreen} from "../../lib/mmk/ListScreen";
@@ -40,7 +40,7 @@ class TaskEditScreen extends ListScreen {
    * Reload the edit screen to show updated data
    */
   reloadEditScreen() {
-    reloadPage({
+    replace({
       url: "page/amazfit/TaskEditScreen",
       param: JSON.stringify({ list_id: this.listId, task_id: this.taskId })
     });

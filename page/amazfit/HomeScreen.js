@@ -1,6 +1,6 @@
 import hmUI from "@zos/ui";
 import { setStatusBarVisible, updateStatusBarTitle } from "@zos/ui";
-import { reloadPage, push } from "@zos/router";
+import { replace, push } from "@zos/router";
 import { setWakeUpRelaunch, setPageBrightTime } from "@zos/display";
 import {ICON_SIZE_MEDIUM, ICON_SIZE_SMALL, SCREEN_MARGIN_Y, SCREEN_WIDTH, WIDGET_WIDTH} from "../../lib/mmk/UiParams";
 
@@ -154,7 +154,7 @@ class HomeScreen extends ConfiguredListScreen {
       if (this.params.forceOnline && config.get("offlineMode", false)) {
         this.hideSpinner();
         hmUI.showToast({ text: t("Sync complete") });
-        reloadPage({
+        replace({
           url: "page/amazfit/HomeScreen",
           param: JSON.stringify({})
         });
@@ -232,7 +232,7 @@ class HomeScreen extends ConfiguredListScreen {
       })
     };
 
-    replace ? reloadPage(params) : push(params);
+    replace ? replace(params) : push(params);
   }
 
   /**
@@ -340,7 +340,7 @@ class HomeScreen extends ConfiguredListScreen {
     });
 
     new TouchEventManager(view).ontouch = () => {
-      reloadPage({
+      replace({
         url: `page/amazfit/HomeScreen`,
         param: JSON.stringify({
           page: this.taskData.nextPageToken
@@ -768,7 +768,7 @@ class HomeScreen extends ConfiguredListScreen {
       icon: "icon_s/mode_offline.png",
       callback: () => {
         tasksProvider.setupOffline();
-        reloadPage({
+        replace({
           url: `page/amazfit/HomeScreen`,
         })
       }
@@ -795,7 +795,7 @@ Page({
         if (now - lastSwipe < 1000) {
           // Second swipe within 1 second - trigger sync
           hmUI.showToast({ text: t("Syncing...") });
-          reloadPage({
+          replace({
             url: "page/amazfit/HomeScreen",
             param: JSON.stringify({ forceOnline: true })
           });

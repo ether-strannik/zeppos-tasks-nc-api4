@@ -1,5 +1,5 @@
 import hmUI, { setStatusBarVisible, updateStatusBarTitle } from "@zos/ui";
-import { reloadPage, back } from "@zos/router";
+import { replace, back } from "@zos/router";
 import { setScrollMode } from "@zos/page";
 import {ConfiguredListScreen} from "../ConfiguredListScreen";
 import {ScreenBoard} from "../../lib/mmk/ScreenBoard";
@@ -142,7 +142,7 @@ class AddEventScreen extends ConfiguredListScreen {
 
   rebuild() {
     setScrollMode({ mode: 1 });
-    reloadPage({
+    replace({
       url: "page/amazfit/AddEventScreen",
       param: JSON.stringify({
         title: this.title,

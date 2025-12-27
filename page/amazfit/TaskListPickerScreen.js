@@ -1,5 +1,5 @@
 import hmUI, { setStatusBarVisible, updateStatusBarTitle } from "@zos/ui";
-import { reloadPage, push } from "@zos/router";
+import { replace, push } from "@zos/router";
 import { ConfiguredListScreen } from "../ConfiguredListScreen";
 import { AppGesture } from "../../lib/mmk/AppGesture";
 
@@ -56,8 +56,8 @@ class TaskListPickerScreen extends ConfiguredListScreen {
 
   selectList(id) {
     config.set("cur_list_id", id);
-    // Use reloadPage with flag so HomeScreen knows this is a manual selection
-    reloadPage({
+    // Use replace with flag so HomeScreen knows this is a manual selection
+    replace({
       url: "page/amazfit/HomeScreen",
       param: JSON.stringify({ fromListPicker: true })
     });
@@ -88,7 +88,7 @@ Page({
           if (now - lastSwipe < 1000) {
             // Second swipe within 1 second - refresh all lists and tasks
             hmUI.showToast({ text: t("Syncing...") });
-            reloadPage({
+            replace({
               url: "page/amazfit/HomeScreen",
               param: JSON.stringify({ forceOnline: true, returnToListPicker: true })
             });
