@@ -601,6 +601,7 @@ class HomeScreen extends ConfiguredListScreen {
     const row = this.row({
       text: "      " + subtask.title,  // Text indent via spaces
       icon: getCheckboxIcon(),
+      iconOffset: indent,  // Offset icon position for subtask indentation
       card: {
         hiddenButton: t("Edit"),
         hiddenButtonCallback: () => {
@@ -650,10 +651,6 @@ class HomeScreen extends ConfiguredListScreen {
         }
       }
     });
-
-    // Move icon to indented position
-    const newIconX = Math.floor(ICON_SIZE_SMALL / 2) + indent;
-    row.iconView.setProperty(hmUI.prop.MORE, { x: newIconX });
 
     // Get priority color
     let priorityColor = null;

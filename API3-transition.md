@@ -305,6 +305,38 @@ const y = (row.viewHeight - iconSize) / 2;
 const y = (row.config.height - iconSize) / 2;
 ```
 
+### 9. Widget position cannot be changed after creation
+In API 3.0, repositioning a widget after it's been created using `setProperty(prop.X, ...)` or `setProperty(prop.MORE, {x: ...})` may not work reliably. Instead, pass the position offset during widget creation:
+```javascript
+// BAD - repositioning after creation doesn't work
+const row = this.row({ text: "Subtask" });
+row.iconView.setProperty(hmUI.prop.X, newX);  // May not work
+
+// GOOD - pass offset in config during creation
+const row = this.row({
+  text: "Subtask",
+  iconOffset: indent  // Applied during widget creation
+});
+```
+
+### 10. iCalendar properties with parameters
+iCalendar properties like `RELATED-TO`, `DTSTART`, `DUE` may have parameters (e.g., `RELATED-TO;RELTYPE=PARENT`). Use a helper to find properties regardless of parameters:
+```javascript
+// BAD - won't find "RELATED-TO;RELTYPE=PARENT"
+this.parentId = vtodo["RELATED-TO"];
+
+// GOOD - finds property with any parameters
+this.parentId = this._getPropertyValue(vtodo, "RELATED-TO");
+
+_getPropertyValue(vtodo, propName) {
+  if (vtodo[propName] !== undefined) return vtodo[propName];
+  for (const key of Object.keys(vtodo)) {
+    if (key.startsWith(propName + ";")) return vtodo[key];
+  }
+  return null;
+}
+```
+
 ---
 
 ## Module Reference

@@ -17,7 +17,7 @@ export class CalDAVTask {
       this.completed = this.status === "COMPLETED";
       this.inProgress = this.status === "IN-PROCESS";
       this.uid = vtodo.UID || null;
-      this.parentId = vtodo["RELATED-TO"] || null;
+      this.parentId = this._getPropertyValue(vtodo, "RELATED-TO");
       this.priority = parseInt(vtodo.PRIORITY, 10) || 0;
       this.startDate = this._parseDueDate(this._getPropertyValue(vtodo, "DTSTART"));
       this.dueDate = this._parseDueDate(this._getPropertyValue(vtodo, "DUE"));
