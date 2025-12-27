@@ -434,6 +434,36 @@ scrollTo({ y: 0 });  // Scroll to top
 
 However, `scrollTo()` won't prevent widgets from scrolling - for fixed overlays use VIEW_CONTAINER (see pitfall #12).
 
+### 15. back() reconstructs previous page
+**CRITICAL**: In API 3.0, `back()` **reconstructs** the previous page instead of just resuming it. This means all instance variables are lost.
+
+**Impact:** When you navigate Screen A → push to Screen B → back to Screen A, Screen A's constructor is called again with params=undefined.
+
+**Workaround:** Before navigating with `push()`, store the current page's params in config so they're available when it gets reconstructed on `back()`:
+
+```javascript
+// Screen A - before navigating to picker/child screen
+showCategoryPicker() {
+  // Store params for the picker screen
+  config.set("_categoryPickerParams", { listId, taskId, ... });
+
+  // ALSO store current screen params - we'll be reconstructed on back()
+  config.set("_editTaskParams", { list_id: this.listId, task_id: this.taskId });
+
+  push({
+    url: "page/amazfit/CategoryPickerScreen",
+    param: JSON.stringify(pickerParams)
+  });
+}
+```
+
+This is required for ANY screen that:
+1. Uses `push()` to navigate to a child screen
+2. Expects to be resumed when the child calls `back()`
+3. Relies on instance variables or params to function
+
+In API 1.0, `back()` would resume the previous page. In API 3.0, it **reconstructs** it from scratch.
+
 ---
 
 ## Module Reference
