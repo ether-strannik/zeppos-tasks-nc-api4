@@ -497,6 +497,50 @@ This is required for ANY screen that:
 
 In API 1.0, `back()` would resume the previous page. In API 3.0, it **reconstructs** it from scratch.
 
+### 16. Geolocation sensor API changed
+**CRITICAL**: In API 3.0, the GPS/geolocation sensor uses a completely different API. The global `hmSensor` doesn't exist.
+
+**API 1.0 (doesn't work in API 3.0):**
+```javascript
+// Global hmSensor - doesn't exist in API 3.0
+if (typeof hmSensor !== 'undefined' && hmSensor.id.GEOLOCATION) {
+  const geolocation = hmSensor.createSensor(hmSensor.id.GEOLOCATION);
+  geolocation.start();
+  // Access via properties
+  const lat = geolocation.latitude;
+  const lon = geolocation.longitude;
+}
+```
+
+**API 3.0:**
+```javascript
+import { Geolocation } from "@zos/sensor";
+
+// Create instance
+const geolocation = new Geolocation();
+
+// Start and register callback
+geolocation.start();
+geolocation.onChange(() => {
+  // Check status: 'A' = active/valid, 'V' = invalid
+  if (geolocation.getStatus() === 'A') {
+    // Get coordinates via methods (not properties)
+    const lat = geolocation.getLatitude();
+    const lon = geolocation.getLongitude();
+
+    // Use coordinates...
+    geolocation.stop();
+  }
+});
+```
+
+**Key differences:**
+- Import from `@zos/sensor` instead of global `hmSensor`
+- Use `new Geolocation()` constructor
+- Check `getStatus()` - only read coordinates when status is `'A'`
+- Use methods `getLatitude()` and `getLongitude()` (not properties)
+- Requires permission: `"device:os.geolocation"` in app.json
+
 ---
 
 ## Module Reference
