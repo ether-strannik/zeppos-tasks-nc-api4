@@ -267,7 +267,30 @@ widget.addEventListener(event.CLICK_UP, cb);
 ```
 
 ### 4. Assets in wrong folder
-Icons won't display if placed in `assets/` root instead of `assets/common.r/` or `assets/common.s/`.
+Icons won't display if placed in `assets/` root or device-specific folders instead of `assets/common.r/` or `assets/common.s/`.
+
+**API 1.0:** Assets were organized per-device:
+```
+assets/
+  active/
+    screen_board/32/true.png
+  band7/
+    screen_board/24/true.png
+```
+
+**API 3.0:** Assets must be in platform folders (round/square):
+```
+assets/
+  common.r/              <- Round screens
+    screen_board/32/true.png
+    screen_board/24/true.png
+  common.s/              <- Square screens
+    screen_board/32/true.png
+```
+
+**Symptom:** Icons/images don't appear, widgets show blank spaces where images should be. Code runs without errors but images are missing.
+
+**Solution:** Copy all assets from device-specific folders to `common.r/` and `common.s/` maintaining the same subfolder structure.
 
 ### 5. BLE import on side-app
 Importing `@zos/ble` on the side-app will fail. Use conditional loading:
