@@ -33,12 +33,26 @@
           "pages": [
             "page/amazfit/HomeScreen",
             "page/amazfit/TaskEditScreen",
-            "pages/test",
-            "pages/alarm"
+            "page/amazfit/SettingsScreen",
+            "page/amazfit/AboutScreen",
+            "page/amazfit/TaskListPickerScreen",
+            "page/amazfit/ReminderPickerScreen",
+            "page/amazfit/CategoryPickerScreen",
+            "page/amazfit/AddEventScreen",
+            "page/amazfit/FontSizeSetupScreen",
+            "page/amazfit/DonatePage",
+            "page/amazfit/MarkdownReader",
+            "page/amazfit/NewNoteScreen"
           ]
         },
         "app-service": {
           "services": ["app-service/index"]
+        },
+        "app-side": {
+          "path": "app-side/index"
+        },
+        "setting": {
+          "path": "setting/index"
         }
       },
       "platforms": [

@@ -1,0 +1,110 @@
+msgid "Account"
+msgstr ""
+
+msgid "About"
+msgstr ""
+
+msgid "Like this application? Consider to support their development with a small donation: "
+msgstr ""
+
+msgid "Want to see ZeppTasks into another language? You can help us with translation: "
+msgstr ""
+
+msgid "Log in with Google"
+msgstr ""
+
+msgid "Source code available: "
+msgstr ""
+
+msgid "Please wait…"
+msgstr ""
+
+msgid "How-to login:"
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Login success"
+msgstr ""
+
+msgid "Log out"
+msgstr ""
+
+msgid "Set up sync"
+msgstr ""
+
+msgid "Sign in to synchronize your tasks with cloud."
+msgstr ""
+
+msgid "Use Google account"
+msgstr ""
+
+msgid "Tasks will be in sync with Google tasks"
+msgstr ""
+
+msgid "Use Microsoft account"
+msgstr ""
+
+msgid "Tasks will be in sync with Microsoft ToDo"
+msgstr ""
+
+msgid "Copy the following link, open them into your browser, and perform a log in."
+msgstr ""
+
+msgid "Use TickTick account"
+msgstr ""
+
+msgid "Tasks will be in sync with TickTick application"
+msgstr "Tasks will be in sync with TickTick application"
+
+msgid "After that, you'll got a access token on screen. Paste them into field bellow:"
+msgstr ""
+
+msgid "Wait for a few seconds until app will connect with Google and validate your credentials"
+msgstr ""
+
+msgid "Now Tasks on ZeppOS have access to tasks in your cloud account."
+msgstr ""
+
+msgid "Privacy Policy"
+msgstr ""
+
+msgid "App is still in offline mode"
+msgstr ""
+
+msgid "Open Tasks app on your watch and wipe local data to start seeing synced tasks."
+msgstr ""
+
+msgid "Use Nextcloud server account"
+msgstr ""
+
+msgid "Sync your tasks with personal cloud server"
+msgstr ""
+
+msgid "Checking, is login/password valid…"
+msgstr ""
+
+msgid "Credentials are valid, connection success."
+msgstr ""
+
+msgid "Authorization failed, or server configuration isn't valid."
+msgstr ""
+
+msgid "Enter your cloud credentials. If two-factor auth is enabled, you must create and use an application password."
+msgstr ""
+
+msgid "Save configuration"
+msgstr ""
+
+msgid "Enter your Nextcloud installation URL:"
+msgstr ""
+
+msgid "Checking, is URL valid…"
+msgstr ""
+
+msgid "Nextcloud URL is valid."
+msgstr ""
+
+msgid "Enter valid cloud URL to continue."
+msgstr ""
