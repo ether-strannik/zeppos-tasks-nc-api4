@@ -1047,7 +1047,6 @@ class TaskEditScreen extends ListScreen {
 // noinspection JSCheckFunctionSignatures
 Page({
   onInit(params) {
-    console.log("TaskEditScreen onInit params:", params, "type:", typeof params);
     setStatusBarVisible(true);
     updateStatusBarTitle("");
 

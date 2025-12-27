@@ -384,7 +384,6 @@ class HomeScreen extends ConfiguredListScreen {
             list_id: this.currentList.id,
             task_id: data.id
           };
-          console.log("Opening TaskEditScreen with:", JSON.stringify(paramObj));
           // Store params in config as workaround for API 3.0 push() not passing params
           config.set("_editTaskParams", paramObj);
           push({
