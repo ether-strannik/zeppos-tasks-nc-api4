@@ -4,18 +4,12 @@ import {getDeviceInfo} from "@zos/device";
 import {log} from "@zos/utils";
 import * as alarmMgr from "@zos/alarm";
 import {Time} from "@zos/sensor";
-import {MessageBuilder} from "../lib/zeppos/message";
-import {ConfigStorage} from "../lib/mmk/ConfigStorage";
-import {FsTools} from "../lib/mmk/Path";
-
 const logger = log.getLogger("test");
 const {width: DEVICE_WIDTH, height: DEVICE_HEIGHT} = getDeviceInfo();
 
 const globalData = getApp()._options.globalData;
-const appId = 1023438;
-FsTools.appTags = [appId, "app"];
-const messageBuilder = new MessageBuilder({ appId });
-const config = new ConfigStorage();
+const messageBuilder = globalData.messageBuilder;
+const config = globalData.config;
 
 Page({
   build() {
