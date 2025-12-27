@@ -380,12 +380,16 @@ class HomeScreen extends ConfiguredListScreen {
       card: {
         hiddenButton: t("Edit"),
         hiddenButtonCallback: () => {
+          const paramObj = {
+            list_id: this.currentList.id,
+            task_id: data.id
+          };
+          console.log("Opening TaskEditScreen with:", JSON.stringify(paramObj));
+          // Store params in config as workaround for API 3.0 push() not passing params
+          config.set("_editTaskParams", paramObj);
           push({
             url: `page/amazfit/TaskEditScreen`,
-            param: JSON.stringify({
-              list_id: this.currentList.id,
-              task_id: data.id
-            })
+            param: JSON.stringify(paramObj)
           })
         }
       },
@@ -605,12 +609,15 @@ class HomeScreen extends ConfiguredListScreen {
       card: {
         hiddenButton: t("Edit"),
         hiddenButtonCallback: () => {
+          const paramObj = {
+            list_id: subtask.list ? subtask.list.id : this.currentList.id,
+            task_id: subtask.id
+          };
+          // Store params in config as workaround for API 3.0 push() not passing params
+          config.set("_editTaskParams", paramObj);
           push({
             url: `page/amazfit/TaskEditScreen`,
-            param: JSON.stringify({
-              list_id: subtask.list ? subtask.list.id : this.currentList.id,
-              task_id: subtask.id
-            })
+            param: JSON.stringify(paramObj)
           })
         }
       },

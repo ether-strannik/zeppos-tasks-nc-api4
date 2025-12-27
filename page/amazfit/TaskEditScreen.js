@@ -25,6 +25,17 @@ class TaskEditScreen extends ListScreen {
       console.log("TaskEditScreen param parse error:", e);
       param = {};
     }
+
+    // Fallback: read from config if push() didn't pass params (API 3.0 issue)
+    if (!param.list_id || !param.task_id) {
+      const savedParams = config.get("_editTaskParams");
+      if (savedParams) {
+        console.log("TaskEditScreen: Using params from config:", JSON.stringify(savedParams));
+        param = savedParams;
+        config.set("_editTaskParams", null); // Clear after use
+      }
+    }
+
     this.listId = param.list_id;
     this.taskId = param.task_id;
     console.log("TaskEditScreen: listId=", this.listId, "taskId=", this.taskId);
@@ -1036,6 +1047,7 @@ class TaskEditScreen extends ListScreen {
 // noinspection JSCheckFunctionSignatures
 Page({
   onInit(params) {
+    console.log("TaskEditScreen onInit params:", params, "type:", typeof params);
     setStatusBarVisible(true);
     updateStatusBarTitle("");
 
