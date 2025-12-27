@@ -441,8 +441,11 @@ class HomeScreen extends ConfiguredListScreen {
     const priorityColor = getPriorityColor();
     if (priorityColor && priorityColor !== 0xFFFFFF) {
       const ringSize = ICON_SIZE_SMALL + 4;
+      const rowHeight = row.config.height;
+      // Center ring around icon: icon is at (ICON_SIZE_SMALL/2, (rowHeight-ICON_SIZE_SMALL)/2)
+      // Ring should be 2px larger on each side, so offset by -2
       const ringX = Math.floor(ICON_SIZE_SMALL / 2) - 2;
-      const ringY = Math.floor((row.viewHeight - ICON_SIZE_SMALL) / 2) - 2;
+      const ringY = Math.floor((rowHeight - ringSize) / 2);
 
       priorityRing = row.group.createWidget(hmUI.widget.ARC, {
         x: ringX,
@@ -459,8 +462,9 @@ class HomeScreen extends ConfiguredListScreen {
     // Add notes indicator icon on right side if task has description
     if (data.description && data.description.trim().length > 0) {
       const iconSize = ICON_SIZE_SMALL;
+      const rowHeight = row.config.height;
       const iconX = WIDGET_WIDTH - iconSize - 8;  // Right side of row
-      const iconY = Math.floor((row.viewHeight - iconSize) / 2);
+      const iconY = Math.floor((rowHeight - iconSize) / 2);
 
       row.group.createWidget(hmUI.widget.IMG, {
         x: iconX,
@@ -479,10 +483,11 @@ class HomeScreen extends ConfiguredListScreen {
       const tagCharWidth = 11;  // Approximate character width
       const tagWidth = tagText.length * tagCharWidth + tagPadding * 2;
       const tagHeight = 28;
+      const rowHeight = row.config.height;
       // Position to the left of notes icon (if present) or right side
       const hasNotes = data.description && data.description.trim().length > 0;
       const tagX = WIDGET_WIDTH - tagWidth - (hasNotes ? ICON_SIZE_SMALL + 16 : 8);
-      const tagY = Math.floor((row.viewHeight - tagHeight) / 2);
+      const tagY = Math.floor((rowHeight - tagHeight) / 2);
 
       // Background rounded rectangle
       row.group.createWidget(hmUI.widget.FILL_RECT, {
@@ -647,7 +652,8 @@ class HomeScreen extends ConfiguredListScreen {
     });
 
     // Move icon to indented position
-    row.iconView.setProperty(hmUI.prop.X, Math.floor(ICON_SIZE_SMALL / 2) + indent);
+    const newIconX = Math.floor(ICON_SIZE_SMALL / 2) + indent;
+    row.iconView.setProperty(hmUI.prop.MORE, { x: newIconX });
 
     // Get priority color
     let priorityColor = null;
@@ -660,8 +666,9 @@ class HomeScreen extends ConfiguredListScreen {
     let priorityRing = null;
     if (priorityColor) {
       const ringSize = ICON_SIZE_SMALL + 4;
+      const rowHeight = row.config.height;
       const ringX = Math.floor(ICON_SIZE_SMALL / 2) + indent - 2;
-      const ringY = Math.floor((row.viewHeight - ICON_SIZE_SMALL) / 2) - 2;
+      const ringY = Math.floor((rowHeight - ringSize) / 2);
 
       priorityRing = row.group.createWidget(hmUI.widget.ARC, {
         x: ringX,
@@ -678,8 +685,9 @@ class HomeScreen extends ConfiguredListScreen {
     // Add notes indicator icon on right side if subtask has description
     if (subtask.description && subtask.description.trim().length > 0) {
       const iconSize = ICON_SIZE_SMALL;
+      const rowHeight = row.config.height;
       const iconX = WIDGET_WIDTH - iconSize - 8;  // Right side of row
-      const iconY = Math.floor((row.viewHeight - iconSize) / 2);
+      const iconY = Math.floor((rowHeight - iconSize) / 2);
 
       row.group.createWidget(hmUI.widget.IMG, {
         x: iconX,

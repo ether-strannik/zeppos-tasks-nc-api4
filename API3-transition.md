@@ -278,6 +278,33 @@ if (typeof messaging === 'undefined') {
 }
 ```
 
+### 6. Icon sizes must match ICON_SIZE_SMALL
+Icons must be the correct size for the screen. `ICON_SIZE_SMALL` varies by screen width:
+- Screen < 390px: `ICON_SIZE_SMALL = 24` → use `icon_s_24/` icons
+- Screen >= 390px: `ICON_SIZE_SMALL = 32` → use `icon_s_32/` icons
+
+If icons are wrong size, UI elements (like priority rings) will appear misaligned.
+
+### 7. Widget property updates - use prop.MORE
+When updating widget properties like position, use `prop.MORE` for reliability:
+```javascript
+// May not work reliably
+widget.setProperty(hmUI.prop.X, newX);
+
+// More reliable
+widget.setProperty(hmUI.prop.MORE, { x: newX });
+```
+
+### 8. Row height calculation
+When positioning elements inside a row, use `row.config.height` not `row.viewHeight`:
+```javascript
+// BAD - viewHeight includes +8 padding for row spacing
+const y = (row.viewHeight - iconSize) / 2;
+
+// GOOD - config.height is actual row height
+const y = (row.config.height - iconSize) / 2;
+```
+
 ---
 
 ## Module Reference
