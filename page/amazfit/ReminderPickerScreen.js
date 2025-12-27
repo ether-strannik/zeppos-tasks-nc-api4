@@ -23,10 +23,20 @@ class ReminderPickerScreen extends ConfiguredListScreen {
     super();
 
     try {
-      params = params ? JSON.parse(params) : {};
+      params = (params && params !== "undefined") ? JSON.parse(params) : {};
     } catch(e) {
       params = {};
     }
+
+    // Fallback: read from config if push() didn't pass params (API 3.0 issue)
+    if (!params.listId || !params.taskId) {
+      const savedParams = config.get("_reminderPickerParams");
+      if (savedParams) {
+        params = savedParams;
+        config.set("_reminderPickerParams", null); // Clear after use
+      }
+    }
+
     this.listId = params.listId;
     this.taskId = params.taskId;
     this.currentAlarm = params.currentAlarm;

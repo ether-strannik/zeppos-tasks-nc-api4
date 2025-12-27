@@ -223,16 +223,20 @@ class HomeScreen extends ConfiguredListScreen {
   /**
    * Open task list picker (as new pane or replace current)
    */
-  openTaskListPicker(mode, replace = false) {
+  openTaskListPicker(mode, shouldReplace = false) {
+    const paramObj = {
+      lists: this.taskLists,
+      mode
+    };
+    // Store params in config as workaround for API 3.0 push/replace not passing params
+    config.set("_taskListPickerParams", paramObj);
+
     const params = {
       url: `page/amazfit/TaskListPickerScreen`,
-      param: JSON.stringify({
-        lists: this.taskLists,
-        mode
-      })
+      param: JSON.stringify(paramObj)
     };
 
-    replace ? replace(params) : push(params);
+    shouldReplace ? replace(params) : push(params);
   }
 
   /**

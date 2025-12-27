@@ -33,6 +33,12 @@ class CategoryPickerScreen extends ConfiguredListScreen {
     this.taskId = param.taskId;
     this.currentCategories = param.currentCategories || [];
 
+    console.log("CategoryPickerScreen: listId=", this.listId, "taskId=", this.taskId);
+
+    if (!this.listId || !this.taskId) {
+      console.log("CategoryPickerScreen: Missing listId or taskId");
+    }
+
     // Selected categories (copy of current to allow editing)
     this.selected = [...this.currentCategories];
 
@@ -196,7 +202,24 @@ class CategoryPickerScreen extends ConfiguredListScreen {
   }
 
   saveCategories() {
-    const task = tasksProvider.getTaskList(this.listId).getTask(this.taskId);
+    console.log("saveCategories: listId=", this.listId, "taskId=", this.taskId);
+
+    if (!this.listId || !this.taskId) {
+      hmUI.showToast({ text: "Error: Missing task ID" });
+      return;
+    }
+
+    const taskList = tasksProvider.getTaskList(this.listId);
+    if (!taskList) {
+      hmUI.showToast({ text: "Error: Task list not found" });
+      return;
+    }
+
+    const task = taskList.getTask(this.taskId);
+    if (!task) {
+      hmUI.showToast({ text: "Error: Task not found" });
+      return;
+    }
 
     if (typeof task.setCategories !== 'function') {
       hmUI.showToast({ text: t("Not supported") });

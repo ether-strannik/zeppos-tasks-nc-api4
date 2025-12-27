@@ -476,15 +476,22 @@ class TaskEditScreen extends ListScreen {
    * Open reminder picker screen with all options
    */
   showReminderPicker() {
+    const paramObj = {
+      listId: this.listId,
+      taskId: this.taskId,
+      currentAlarm: this.task.alarm,
+      startDate: this.task.startDate ? this.task.startDate.getTime() : null,
+      dueDate: this.task.dueDate ? this.task.dueDate.getTime() : null
+    };
+    // Store params in config as workaround for API 3.0 push() not passing params
+    config.set("_reminderPickerParams", paramObj);
+
+    // ALSO store TaskEditScreen params - it will be reconstructed when we back()
+    config.set("_editTaskParams", { list_id: this.listId, task_id: this.taskId });
+
     push({
       url: "page/amazfit/ReminderPickerScreen",
-      param: JSON.stringify({
-        listId: this.listId,
-        taskId: this.taskId,
-        currentAlarm: this.task.alarm,
-        startDate: this.task.startDate ? this.task.startDate.getTime() : null,
-        dueDate: this.task.dueDate ? this.task.dueDate.getTime() : null
-      })
+      param: JSON.stringify(paramObj)
     });
   }
 
@@ -721,6 +728,10 @@ class TaskEditScreen extends ListScreen {
     };
     // Store params in config as workaround for API 3.0 push() not passing params
     config.set("_categoryPickerParams", paramObj);
+
+    // ALSO store TaskEditScreen params - it will be reconstructed when we back()
+    config.set("_editTaskParams", { list_id: this.listId, task_id: this.taskId });
+
     push({
       url: "page/amazfit/CategoryPickerScreen",
       param: JSON.stringify(paramObj)

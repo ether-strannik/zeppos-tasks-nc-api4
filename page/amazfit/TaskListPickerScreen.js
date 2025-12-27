@@ -10,10 +10,20 @@ class TaskListPickerScreen extends ConfiguredListScreen {
     super();
 
     try {
-      params = params ? JSON.parse(params) : {};
+      params = (params && params !== "undefined") ? JSON.parse(params) : {};
     } catch(e) {
       params = {};
     }
+
+    // Fallback: read from config if push() didn't pass params (API 3.0 issue)
+    if (!params.lists || !params.mode) {
+      const savedParams = config.get("_taskListPickerParams");
+      if (savedParams) {
+        params = savedParams;
+        config.set("_taskListPickerParams", null); // Clear after use
+      }
+    }
+
     this.lists = params.lists || [];
     this.mode = params.mode;
 
