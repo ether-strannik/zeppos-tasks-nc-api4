@@ -6,7 +6,7 @@ import {ScreenBoard} from "../../lib/mmk/ScreenBoard";
 import {DateTimePicker} from "../../lib/mmk/DateTimePicker";
 import {createSpinner, request, log, flushLog} from "../Utils";
 
-const { t } = getApp()._options.globalData
+const { t, config } = getApp()._options.globalData
 
 class AddEventScreen extends ConfiguredListScreen {
   constructor() {
@@ -445,19 +445,33 @@ Page({
 
     const screen = new AddEventScreen();
 
-    // Restore state if passed
-    if (param) {
-      try {
-        const state = JSON.parse(param);
-        screen.title = state.title || "";
-        screen.startDate = state.startDate ? new Date(state.startDate) : null;
-        screen.endDate = state.endDate ? new Date(state.endDate) : null;
-        screen.lat = state.lat !== undefined ? state.lat : null;
-        screen.lon = state.lon !== undefined ? state.lon : null;
-        screen.description = state.description || "";
-        screen.selectedCalendarId = state.selectedCalendarId || null;
-        screen.selectedCalendarTitle = state.selectedCalendarTitle || "";
-      } catch(e) {}
+    // Parse params
+    let state = null;
+    try {
+      state = param ? JSON.parse(param) : null;
+    } catch(e) {
+      state = null;
+    }
+
+    // Fallback: read from config if push() didn't pass params (API 3.0 issue)
+    if (!state) {
+      const savedParams = config.get("_addEventParams");
+      if (savedParams) {
+        state = savedParams;
+        config.set("_addEventParams", null); // Clear after use
+      }
+    }
+
+    // Restore state if available
+    if (state) {
+      screen.title = state.title || "";
+      screen.startDate = state.startDate ? new Date(state.startDate) : null;
+      screen.endDate = state.endDate ? new Date(state.endDate) : null;
+      screen.lat = state.lat !== undefined ? state.lat : null;
+      screen.lon = state.lon !== undefined ? state.lon : null;
+      screen.description = state.description || "";
+      screen.selectedCalendarId = state.selectedCalendarId || null;
+      screen.selectedCalendarTitle = state.selectedCalendarTitle || "";
     }
 
     screen.build();

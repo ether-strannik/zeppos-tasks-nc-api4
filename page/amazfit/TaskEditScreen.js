@@ -1032,16 +1032,24 @@ class TaskEditScreen extends ListScreen {
 
   showCalendarPicker() {
     // Navigate to AddEventScreen with task data pre-filled
+    const paramObj = {
+      title: this.task.title,
+      startDate: this.task.startDate ? this.task.startDate.getTime() : null,
+      endDate: this.task.dueDate ? this.task.dueDate.getTime() : null,
+      lat: this.task.geo ? this.task.geo.lat : null,
+      lon: this.task.geo ? this.task.geo.lon : null,
+      description: this.task.description || ""
+    };
+
+    // Store params in config as workaround for API 3.0 push() not passing params
+    config.set("_addEventParams", paramObj);
+
+    // ALSO store TaskEditScreen params - it will be reconstructed when we back()
+    config.set("_editTaskParams", { list_id: this.listId, task_id: this.taskId });
+
     push({
       url: "page/amazfit/AddEventScreen",
-      param: JSON.stringify({
-        title: this.task.title,
-        startDate: this.task.startDate ? this.task.startDate.getTime() : null,
-        endDate: this.task.dueDate ? this.task.dueDate.getTime() : null,
-        lat: this.task.geo ? this.task.geo.lat : null,
-        lon: this.task.geo ? this.task.geo.lon : null,
-        description: this.task.description || ""
-      })
+      param: JSON.stringify(paramObj)
     });
   }
 }
