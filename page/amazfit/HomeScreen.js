@@ -608,8 +608,10 @@ class HomeScreen extends ConfiguredListScreen {
 
   /**
    * UI: Subtask row - indented under parent task (CalDAV/Nextcloud)
+   * @param {Object} subtask - The subtask object
+   * @param {number} indentLevel - Nesting level (1 for direct subtasks, 2+ for nested)
    */
-  subtaskRow(subtask) {
+  subtaskRow(subtask, indentLevel = 1) {
     let {completed, inProgress} = subtask;
     const supportsStatus = typeof subtask.setStatus === 'function';
 
@@ -633,11 +635,13 @@ class HomeScreen extends ConfiguredListScreen {
     let lastTapTime = 0;
     const DOUBLE_TAP_THRESHOLD = 400; // ms
 
-    // Indentation for subtask
-    const indent = ICON_SIZE_SMALL;
+    // Indentation for subtask - increase with nesting level
+    const indent = ICON_SIZE_SMALL * indentLevel;
+    // Text indent with spaces (proportional to nesting level)
+    const textIndent = "      ".repeat(indentLevel);
 
     const row = this.row({
-      text: "      " + displayTitle,  // Text indent via spaces
+      text: textIndent + displayTitle,
       icon: getCheckboxIcon(),
       iconOffset: indent,  // Offset icon position for subtask indentation
       card: {
@@ -776,6 +780,13 @@ class HomeScreen extends ConfiguredListScreen {
 
     // Style: gray for subtasks
     row.textView.setProperty(hmUI.prop.COLOR, completed ? 0x666666 : 0xAAAAAA);
+
+    // Display nested subtasks recursively with increased indentation
+    if (subtask.subtasks && subtask.subtasks.length > 0) {
+      subtask.subtasks.forEach((nestedSubtask) => {
+        this.subtaskRow(nestedSubtask, indentLevel + 1);
+      });
+    }
   }
 
   /**
