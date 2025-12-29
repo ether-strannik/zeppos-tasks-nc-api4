@@ -31,13 +31,6 @@ class SettingsScreen extends ConfiguredListScreen {
         url: `page/amazfit/FontSizeSetupScreen`
       })
     });
-    this.row({
-      text: t("Keyboard…"),
-      icon: "icon_s/keyboard.png",
-      callback: () => push({
-        url: `page/amazfit/ScreenBoardSetup`
-      })
-    });
 
     // Additional features
     this.offset(16);

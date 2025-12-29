@@ -1,8 +1,7 @@
-import hmUI, { setStatusBarVisible, updateStatusBarTitle } from "@zos/ui";
+import hmUI, { setStatusBarVisible, updateStatusBarTitle, createKeyboard, deleteKeyboard, inputType } from "@zos/ui";
 import { replace, back } from "@zos/router";
 import { setScrollMode } from "@zos/page";
 import {ConfiguredListScreen} from "../ConfiguredListScreen";
-import {ScreenBoard} from "../../lib/mmk/ScreenBoard";
 import {DateTimePicker} from "../../lib/mmk/DateTimePicker";
 import {createSpinner, request, log, flushLog} from "../Utils";
 
@@ -88,28 +87,6 @@ class AddEventScreen extends ConfiguredListScreen {
     });
 
     this.offset();
-
-    // Setup ScreenBoard for title
-    this.titleBoard = new ScreenBoard();
-    this.titleBoard.title = t("Event title");
-    this.titleBoard.value = this.title;
-    this.titleBoard.confirmButtonText = t("OK");
-    this.titleBoard.onConfirm = (v) => {
-      this.title = v;
-      this.rebuild();
-    };
-    this.titleBoard.visible = false;
-
-    // Setup ScreenBoard for description
-    this.descriptionBoard = new ScreenBoard();
-    this.descriptionBoard.title = t("Notes");
-    this.descriptionBoard.value = this.description;
-    this.descriptionBoard.confirmButtonText = t("OK");
-    this.descriptionBoard.onConfirm = (v) => {
-      this.description = v;
-      this.rebuild();
-    };
-    this.descriptionBoard.visible = false;
   }
 
   loadCalendars() {
@@ -180,9 +157,26 @@ class AddEventScreen extends ConfiguredListScreen {
   }
 
   showTitleEditor() {
-    this.titleBoard.visible = true;
-    // hmApp.setLayerY(0);
-    setScrollMode({ mode: 0 });
+    createKeyboard({
+      inputType: inputType.CHAR,
+      text: this.title || "",
+      onComplete: (keyboardWidget, result) => {
+        try {
+          deleteKeyboard();
+        } catch (e) {
+          console.log("Error deleting keyboard:", e);
+        }
+        this.title = result.data || "";
+        this.rebuild();
+      },
+      onCancel: () => {
+        try {
+          deleteKeyboard();
+        } catch (e) {
+          console.log("Error deleting keyboard on cancel:", e);
+        }
+      }
+    });
   }
 
   captureGPSLocation() {
@@ -315,9 +309,26 @@ class AddEventScreen extends ConfiguredListScreen {
   }
 
   showDescriptionEditor() {
-    this.descriptionBoard.visible = true;
-    // hmApp.setLayerY(0);
-    setScrollMode({ mode: 0 });
+    createKeyboard({
+      inputType: inputType.CHAR,
+      text: this.description || "",
+      onComplete: (keyboardWidget, result) => {
+        try {
+          deleteKeyboard();
+        } catch (e) {
+          console.log("Error deleting keyboard:", e);
+        }
+        this.description = result.data || "";
+        this.rebuild();
+      },
+      onCancel: () => {
+        try {
+          deleteKeyboard();
+        } catch (e) {
+          console.log("Error deleting keyboard on cancel:", e);
+        }
+      }
+    });
   }
 
   showStartDatePicker() {
