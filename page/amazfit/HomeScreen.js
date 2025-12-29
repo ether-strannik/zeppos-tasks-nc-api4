@@ -258,27 +258,12 @@ class HomeScreen extends ConfiguredListScreen {
    * Open new note creation UI
    */
   openNewNoteUI() {
-    console.log("=== openNewNoteUI called ===");
-    console.log("currentList:", this.currentList ? this.currentList.id : "NULL");
-
-    try {
-      const params = {
+    push({
+      url: `page/amazfit/NewNoteScreen`,
+      param: JSON.stringify({
         list: this.currentList.id
-      };
-      console.log("Pushing to NewNoteScreen with params:", JSON.stringify(params));
-
-      push({
-        url: `page/amazfit/NewNoteScreen`,
-        param: JSON.stringify(params)
-      });
-
-      console.log("Push completed");
-    } catch (error) {
-      console.log("=== ERROR in openNewNoteUI ===");
-      console.log("Error:", error);
-      console.log("Error message:", error.message);
-      console.log("Error stack:", error.stack);
-    }
+      })
+    });
   }
 
   /**
@@ -352,7 +337,6 @@ class HomeScreen extends ConfiguredListScreen {
 
     // Tasks
     this.headline(t(this.cachedMode ? "Offline tasks:" : "Tasks:"));
-    console.log(this.taskData.tasks);
     this.taskData.tasks.map((data) => {
       this.taskCard(data);
     });
@@ -842,7 +826,6 @@ class HomeScreen extends ConfiguredListScreen {
 // noinspection JSCheckFunctionSignatures
 Page({
   onInit(params) {
-    console.log("HomePage.build()");
     setStatusBarVisible(true);
     updateStatusBarTitle(t("Tasks"));
 
