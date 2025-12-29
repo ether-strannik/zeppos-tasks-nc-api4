@@ -620,6 +620,15 @@ class HomeScreen extends ConfiguredListScreen {
       return 'icon_s/cb_false.png';
     };
 
+    // Build display title with optional reminder countdown
+    let displayTitle = subtask.title;
+    if (config.get("showCountdown", false) && typeof subtask.getReminderCountdown === 'function') {
+      const countdown = subtask.getReminderCountdown();
+      if (countdown) {
+        displayTitle += ` (${countdown})`;
+      }
+    }
+
     // Double-tap detection
     let lastTapTime = 0;
     const DOUBLE_TAP_THRESHOLD = 400; // ms
@@ -628,7 +637,7 @@ class HomeScreen extends ConfiguredListScreen {
     const indent = ICON_SIZE_SMALL;
 
     const row = this.row({
-      text: "      " + subtask.title,  // Text indent via spaces
+      text: "      " + displayTitle,  // Text indent via spaces
       icon: getCheckboxIcon(),
       iconOffset: indent,  // Offset icon position for subtask indentation
       card: {
