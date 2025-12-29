@@ -42,7 +42,8 @@
             "page/amazfit/FontSizeSetupScreen",
             "page/amazfit/DonatePage",
             "page/amazfit/MarkdownReader",
-            "page/amazfit/NewNoteScreen"
+            "page/amazfit/NewNoteScreen",
+            "page/amazfit/LocalListsManageScreen"
           ]
         },
         "app-service": {

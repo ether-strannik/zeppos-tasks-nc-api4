@@ -76,8 +76,17 @@ class TaskListPickerScreen extends ConfiguredListScreen {
     this.offset(16);
     this.row({
       text: t("Create local list"),
-      icon: "icon_s/add.png",
+      icon: "icon_s/new.png",
       callback: () => this.createLocalList()
+    });
+
+    // Manage local lists button
+    this.row({
+      text: t("Manage local lists…"),
+      icon: "icon_s/list.png",
+      callback: () => push({
+        url: `page/amazfit/LocalListsManageScreen`
+      })
     });
 
     // Settings button
