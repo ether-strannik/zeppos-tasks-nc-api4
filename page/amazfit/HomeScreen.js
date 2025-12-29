@@ -89,64 +89,33 @@ class HomeScreen extends ConfiguredListScreen {
     tasksProvider.init().then(() => {
       return tasksProvider.getTaskLists();
     }).then((lists) => {
-      console.log("=== DEBUG: Raw lists from server ===");
-      console.log("Lists is null?", lists === null);
-      console.log("Lists is undefined?", lists === undefined);
-      console.log("Lists length:", lists ? lists.length : "N/A");
-      if (lists) {
-        lists.forEach((list, index) => {
-          console.log(`List[${index}]:`, list === null ? "NULL" : list === undefined ? "UNDEFINED" : `id=${list.id}, title=${list.title}`);
-        });
-      }
-
       // Filter out null entries from lists array
       lists = (lists || []).filter(l => l !== null && l !== undefined);
-      console.log("After filtering, lists length:", lists.length);
       this.taskLists = lists;
-      console.log("this.taskLists length:", this.taskLists.length);
 
       // Sync cached lists with server - add new lists, remove deleted ones
       if (!config.get("forever_offline")) {
-        const rawCachedLists = config.get("cachedLists", []);
-        console.log("=== DEBUG: Raw cached lists ===");
-        console.log("Raw cachedLists length:", rawCachedLists.length);
-        rawCachedLists.forEach((cached, index) => {
-          console.log(`Cached[${index}]:`, cached === null ? "NULL" : cached === undefined ? "UNDEFINED" : `id=${cached.id}, title=${cached.title}`);
-        });
-
-        const cachedLists = rawCachedLists.filter(c => c !== null && c !== undefined);
-        console.log("After filtering cachedLists length:", cachedLists.length);
+        const cachedLists = config.get("cachedLists", []).filter(c => c !== null && c !== undefined);
 
         log("=== List Sync ===");
         log("Server lists:", lists.length);
         log("Cached lists:", cachedLists.length);
 
         // Build new cached lists array matching server
-        console.log("=== DEBUG: Mapping server lists ===");
-        const newCachedLists = lists.map((serverList, index) => {
-          console.log(`Processing serverList[${index}]:`, serverList ? `id=${serverList.id}, title=${serverList.title}` : "NULL/UNDEFINED");
+        const newCachedLists = lists.map((serverList) => {
           if (!serverList || !serverList.id) {
-            console.log(`ERROR: serverList[${index}] is null or missing id!`);
             return null;
           }
           // Find existing cached data for this list
           const cached = cachedLists.find(c => c && c.id === serverList.id);
           if (cached) {
-            console.log(`Found cached data for list ${serverList.id}`);
             // Keep cached tasks, update title
             return { ...cached, title: serverList.title };
           } else {
-            console.log(`No cached data for list ${serverList.id}, creating new`);
             // New list - add with empty tasks
             return { id: serverList.id, title: serverList.title, tasks: [] };
           }
         }).filter(l => l !== null && l !== undefined);
-
-        console.log("=== DEBUG: New cached lists ===");
-        console.log("New cached lists length:", newCachedLists.length);
-        newCachedLists.forEach((list, index) => {
-          console.log(`NewCached[${index}]:`, list ? `id=${list.id}, title=${list.title}` : "NULL");
-        });
 
         log("New cached lists:", newCachedLists.length);
         config.update({ cachedLists: newCachedLists });
@@ -154,21 +123,10 @@ class HomeScreen extends ConfiguredListScreen {
       }
 
       if(config.get("forever_offline")) {
-        console.log("=== DEBUG: Forever offline mode ===");
-        console.log("Using first list from taskLists");
         this.currentList = this.taskLists[0];
       } else {
-        console.log("=== DEBUG: Calling findCurrentList ===");
-        console.log("this.taskLists before findCurrentList:", this.taskLists.length);
-        this.taskLists.forEach((list, index) => {
-          console.log(`taskLists[${index}]:`, list === null ? "NULL" : list === undefined ? "UNDEFINED" : `id=${list.id}, title=${list.title}`);
-        });
-
         this.currentList = this.findCurrentList();
-        console.log("findCurrentList returned:", this.currentList ? `id=${this.currentList.id}` : "NULL");
-
         if(!this.currentList) {
-          console.log("No currentList found, opening task list picker");
           this.openTaskListPicker("setup", true);
           return Promise.resolve(); // Return empty resolved promise to skip rest of chain
         }
@@ -300,12 +258,27 @@ class HomeScreen extends ConfiguredListScreen {
    * Open new note creation UI
    */
   openNewNoteUI() {
-    push({
-      url: `page/amazfit/NewNoteScreen`,
-      param: JSON.stringify({
+    console.log("=== openNewNoteUI called ===");
+    console.log("currentList:", this.currentList ? this.currentList.id : "NULL");
+
+    try {
+      const params = {
         list: this.currentList.id
-      })
-    })
+      };
+      console.log("Pushing to NewNoteScreen with params:", JSON.stringify(params));
+
+      push({
+        url: `page/amazfit/NewNoteScreen`,
+        param: JSON.stringify(params)
+      });
+
+      console.log("Push completed");
+    } catch (error) {
+      console.log("=== ERROR in openNewNoteUI ===");
+      console.log("Error:", error);
+      console.log("Error message:", error.message);
+      console.log("Error stack:", error.stack);
+    }
   }
 
   /**
@@ -326,51 +299,35 @@ class HomeScreen extends ConfiguredListScreen {
    * On initial launch, respects "On Launch Open" setting
    */
   findCurrentList() {
-    console.log("=== DEBUG: Inside findCurrentList ===");
     let selectedList = config.get("cur_list_id");
-    console.log("Looking for list with id:", selectedList);
 
     // If no list is selected (fresh install), return first available list
     if (!selectedList && this.taskLists.length > 0) {
-      console.log("No cur_list_id found, returning first list:", this.taskLists[0].id);
       return this.taskLists[0];
     }
 
     // On initial app launch (no special params), check launch list setting
     const isInitialLaunch = !this.params.forceOnline && !this.params.returnToListPicker && !this.params.fromListPicker;
-    console.log("isInitialLaunch:", isInitialLaunch);
     if (isInitialLaunch) {
       const launchMode = config.get("launchListMode", "last");
-      console.log("launchMode:", launchMode);
       if (launchMode === "specific") {
         const launchListId = config.get("launchListId", "");
-        console.log("launchListId:", launchListId);
         if (launchListId) {
           selectedList = launchListId;
-          console.log("Using launchListId as selectedList:", selectedList);
         }
       }
     }
 
-    console.log("Looping through", this.taskLists.length, "taskLists");
-    let loopIndex = 0;
     for (const entry of this.taskLists) {
-      console.log(`Loop iteration ${loopIndex}:`, entry === null ? "NULL ENTRY" : entry === undefined ? "UNDEFINED ENTRY" : `entry exists`);
       if (entry === null || entry === undefined) {
-        console.log(`ERROR: taskLists[${loopIndex}] is null or undefined!`);
-        loopIndex++;
         continue;
       }
-      console.log(`Checking entry.id (${entry.id}) === selectedList (${selectedList})`);
       // noinspection JSUnresolvedReference
       if (entry.id === selectedList) {
-        console.log("MATCH FOUND! Returning entry with id:", entry.id);
         return entry;
       }
-      loopIndex++;
     }
 
-    console.log("No match found, returning first list if available");
     return this.taskLists.length > 0 ? this.taskLists[0] : null;
   }
 
