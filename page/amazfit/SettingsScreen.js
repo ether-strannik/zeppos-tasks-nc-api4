@@ -1,7 +1,6 @@
 import hmUI, { setStatusBarVisible, updateStatusBarTitle } from "@zos/ui";
 import { push, back } from "@zos/router";
 import { ConfiguredListScreen } from "../ConfiguredListScreen";
-import { readLog, clearLog, clearAllLogs, syncLogToPhone } from "../Utils";
 
 const { config, t, tasksProvider } = getApp()._options.globalData
 
@@ -133,32 +132,6 @@ class SettingsScreen extends ConfiguredListScreen {
     this.offset(16);
     this.buildHelpItems();
 
-    // Debug section
-    this.offset(16);
-    this.headline(t("Debug:"));
-    this.row({
-      text: t("View debug log"),
-      icon: "icon_s/edit.png",
-      callback: () => this.showDebugLog()
-    });
-    this.row({
-      text: t("Sync log to phone"),
-      icon: "icon_s/link.png",
-      callback: () => this.syncLog()
-    });
-    this.row({
-      text: t("Clear debug log"),
-      icon: "icon_s/delete.png",
-      callback: () => {
-        clearLog();
-        clearAllLogs().then(() => {
-          hmUI.showToast({ text: t("All logs cleared") });
-        }).catch(() => {
-          hmUI.showToast({ text: t("Watch log cleared") });
-        });
-      }
-    });
-
     this.offset();
   }
 
@@ -181,28 +154,6 @@ class SettingsScreen extends ConfiguredListScreen {
     }
     config.set("tasks", output);
     back();
-  }
-
-  showDebugLog() {
-    const logContent = readLog();
-    // Navigate to About screen with log content as param
-    push({
-      url: `page/amazfit/AboutScreen`,
-      param: JSON.stringify({ debugLog: logContent })
-    });
-  }
-
-  syncLog() {
-    hmUI.showToast({ text: t("Syncing...") });
-    syncLogToPhone().then((resp) => {
-      if (resp && resp.error) {
-        hmUI.showToast({ text: resp.error });
-      } else {
-        hmUI.showToast({ text: t("Log synced to phone") });
-      }
-    }).catch((e) => {
-      hmUI.showToast({ text: t("Sync failed") });
-    });
   }
 
   buildHelpItems() {
