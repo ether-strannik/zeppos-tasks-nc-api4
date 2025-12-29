@@ -470,8 +470,15 @@ export class CalDAVProxy {
 
     let stack = [{}];
     for(const line of lines) {
-      const key = line.substring(0, line.indexOf(":"));
+      let key = line.substring(0, line.indexOf(":"));
       const value = line.substring(key.length + 1);
+
+      // Strip parameters from property name (e.g., "COMPLETED;VALUE=DATE-TIME" -> "COMPLETED")
+      const semicolonIndex = key.indexOf(";");
+      if (semicolonIndex > -1) {
+        key = key.substring(0, semicolonIndex);
+      }
+
       if(key === "BEGIN") {
         const o = {};
         stack[stack.length - 1][value] = o
