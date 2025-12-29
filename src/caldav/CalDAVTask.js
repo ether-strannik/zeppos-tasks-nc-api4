@@ -219,7 +219,8 @@ export class CalDAVTask {
       now.getDate().toString().padStart(2, "0") +
       "T" + now.getHours().toString().padStart(2, "0") +
       now.getMinutes().toString().padStart(2, "0") +
-      now.getSeconds().toString().padStart(2, "0");
+      now.getSeconds().toString().padStart(2, "0") +
+      "Z";  // UTC indicator
   }
 
   setCompleted(completed) {
