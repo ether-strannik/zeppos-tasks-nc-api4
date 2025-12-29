@@ -79,9 +79,11 @@ class LocalListWrapper {
     insertTask(title) {
         const localLists = this.config.get("localLists", []);
         const nextId = this.config.get("next_id", 0);
+        const newTaskId = `cached:${nextId}`;
 
         const newTask = {
-            id: `cached:${nextId}`,
+            id: newTaskId,
+            uid: newTaskId,  // Set uid so subtasks can reference this task
             title: title,
             completed: false,
             important: false,
@@ -214,9 +216,21 @@ class LocalTask {
         const localLists = this.config.get("localLists", []);
         const listIndex = localLists.findIndex(l => l.id === this.list.id);
         if (listIndex >= 0) {
-            const taskIndex = localLists[listIndex].tasks.findIndex(t => t.id === this.id);
-            if (taskIndex >= 0) {
-                Object.assign(localLists[listIndex].tasks[taskIndex], updates);
+            // Recursively find and update task (handles both top-level tasks and subtasks)
+            const findAndUpdate = (taskList) => {
+                for (let task of taskList) {
+                    if (task.id === this.id || task.uid === this.id) {
+                        Object.assign(task, updates);
+                        return true;
+                    }
+                    if (task.subtasks && findAndUpdate(task.subtasks)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            if (findAndUpdate(localLists[listIndex].tasks)) {
                 this.config.update({ localLists: localLists });
             }
         }
@@ -294,13 +308,26 @@ class LocalTask {
 
     delete() {
         const localLists = this.config.get("localLists", []);
-
         const listIndex = localLists.findIndex(l => l.id === this.list.id);
+
         if (listIndex >= 0) {
-            localLists[listIndex].tasks = localLists[listIndex].tasks.filter(
-                t => t.id !== this.id
-            );
-            this.config.update({ localLists: localLists });
+            // Recursively delete task (handles both top-level tasks and subtasks)
+            const findAndDelete = (taskList) => {
+                for (let i = 0; i < taskList.length; i++) {
+                    if (taskList[i].id === this.id || taskList[i].uid === this.id) {
+                        taskList.splice(i, 1);
+                        return true;
+                    }
+                    if (taskList[i].subtasks && findAndDelete(taskList[i].subtasks)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            if (findAndDelete(localLists[listIndex].tasks)) {
+                this.config.update({ localLists: localLists });
+            }
         }
 
         return Promise.resolve();
