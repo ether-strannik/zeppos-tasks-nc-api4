@@ -1,8 +1,7 @@
 import {deviceName} from "../lib/mmk/DeviceIdentifier";
 import { OfflineHandler } from "./cached/OfflineHandler";
 import {CachedTaskList} from "./cached/CachedTaskList";
-import {CachedHandler} from "./cached/CachedHandler";
-import {LogExecutor} from "./cached/LogExecutor";
+import {LocalHandler} from "./cached/LocalHandler";
 import {CalDAVHandler} from "./caldav/CalDAVHandler";
 
 export class TasksProvider {
@@ -129,11 +128,11 @@ export class TasksProvider {
     }
 
     /**
-     * Get cached handler for offline access to all lists
+     * Get local handler for local list access
      */
     getCachedHandler() {
         if (!this._cachedHandler) {
-            this._cachedHandler = new CachedHandler(this.config);
+            this._cachedHandler = new LocalHandler(this.config);
         }
         return this._cachedHandler;
     }
@@ -156,18 +155,7 @@ export class TasksProvider {
 
     getTaskList(id) {
         if(id === "cached") return this.getCachedTasksList();
+        if(id.startsWith("local:")) return this.getCachedHandler().getTaskList(id);
         return this._handler.getTaskList(id);
-    }
-
-    execCachedLog() {
-        const log = this.config.get("log", []);
-        if(log.length === 0) return Promise.resolve();
-
-        // Pass handler for multi-list support (listId per log entry)
-        const defaultTaskList = this._handler.getTaskList(this.config.get("cacheListID"));
-        const executor = new LogExecutor(log, defaultTaskList, this._handler);
-        return executor.start().then(() => {
-            this.config.update({log: []});
-        })
     }
 }

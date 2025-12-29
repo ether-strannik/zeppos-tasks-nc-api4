@@ -75,14 +75,6 @@ class SettingsScreen extends ConfiguredListScreen {
     this.offset(16);
     this.headline(t("Synchronization:"));
     this.row({
-      text: t("Work offline"),
-      icon: `icon_s/cb_${config.get("offlineMode", false)}.png`,
-      callback: () => {
-        config.set("offlineMode", !config.get("offlineMode", false));
-        back();
-      }
-    });
-    this.row({
       text: t("Pull down to refresh"),
       icon: `icon_s/cb_${config.get("pullToRefresh", false)}.png`,
       callback: () => {

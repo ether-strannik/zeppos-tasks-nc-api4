@@ -13,67 +13,152 @@ const {t, config, tasksProvider, messageBuilder} = getApp()._options.globalData
 
 class HomeScreen extends ConfiguredListScreen {
   constructor(params) {
+    console.log("=== HOMESCREEN CONSTRUCTOR START ===");
+    console.log("Raw params received:", params);
+
     super();
+    console.log("super() completed");
+
     this.cachedMode = false;
     this.currentList = null;
     this.taskData = null;
 
+    console.log("Parsing params...");
     try {
       this.params = JSON.parse(params);
+      console.log("Parsed params:", JSON.stringify(this.params));
       if(!this.params) this.params = {};
     } catch(e) {
+      console.log("Error parsing params:", e);
       this.params = {};
     }
+    console.log("=== HOMESCREEN CONSTRUCTOR END ===");
   }
 
   init() {
-    const offlineMode = config.get("offlineMode", false);
-    const forceOnline = this.params.forceOnline;
-    const hasCachedLists = tasksProvider.hasCachedLists();
+    console.log("=== HOMESCREEN INIT START ===");
+    console.log("this.params:", JSON.stringify(this.params));
 
-    // Manual offline mode - use cache only, no sync (unless forced)
-    if (offlineMode && hasCachedLists && !forceOnline) {
-      this.cachedMode = true;
-      const cachedHandler = tasksProvider.getCachedHandler();
+    // Determine which list to load
+    let selectedListId = config.get("cur_list_id");
+    console.log("cur_list_id from config:", selectedListId);
 
-      cachedHandler.getTaskLists().then((lists) => {
-        this.taskLists = lists;
-        let selectedListId = config.get("cur_list_id");
+    // SAFETY: If selectedListId is a local list, verify it exists before trying to load
+    if (selectedListId && selectedListId.startsWith("local:")) {
+      console.log("Verifying local list exists...");
+      const localLists = config.get("localLists", []);
+      console.log("localLists count:", localLists.length);
+      const listExists = localLists.find(l => l.id === selectedListId);
 
-        // On initial launch, check launch list setting
-        const isInitialLaunch = !this.params.forceOnline && !this.params.returnToListPicker && !this.params.fromListPicker;
-        if (isInitialLaunch) {
-          const launchMode = config.get("launchListMode", "last");
-          if (launchMode === "specific") {
-            const launchListId = config.get("launchListId", "");
-            if (launchListId) selectedListId = launchListId;
-          }
-        }
-
-        const validLists = lists.filter(l => l && l.id);
-        this.currentList = validLists.find(l => l.id === selectedListId) || validLists[0];
-
-        if (!this.currentList) {
-          this.showOfflineOptions("No cached lists");
-          return;
-        }
-
-        return this.currentList.getTasks(config.get("withComplete", false));
-      }).then((taskData) => {
-        if (!taskData) return;
-
-        this.taskData = taskData;
-        this.taskData.tasks = this.sortTasks(this.taskData.tasks);
-        this.build();
-      }).catch((error) => {
-        console.log("Cache load failed:", error);
-        this.showOfflineOptions(error instanceof Error ? error.message : error);
-      });
-    } else {
-      // Online mode - fetch from server
-      this.hideSpinner = createSpinner();
-      this.onlineInit();
+      if (!listExists) {
+        console.log("WARNING: cur_list_id points to non-existent local list!");
+        console.log("Clearing cur_list_id and routing to CalDAV instead");
+        selectedListId = null;  // Clear it so we route to CalDAV
+        config.set("cur_list_id", null);
+      } else {
+        console.log("Local list exists, OK to proceed");
+      }
     }
+
+    // Check launch settings (only on initial launch)
+    const isInitialLaunch = !this.params.returnToListPicker && !this.params.fromListPicker;
+    console.log("isInitialLaunch:", isInitialLaunch);
+
+    if (isInitialLaunch) {
+      const launchMode = config.get("launchListMode", "last");
+      console.log("launchMode:", launchMode);
+
+      if (launchMode === "specific") {
+        const launchListId = config.get("launchListId", "");
+        console.log("launchListId:", launchListId);
+        if (launchListId) selectedListId = launchListId;
+      }
+    }
+
+    console.log("Final selectedListId:", selectedListId);
+
+    // Route by ID prefix
+    if (selectedListId && selectedListId.startsWith("local:")) {
+      console.log("Routing to loadLocalList()");
+      this.loadLocalList(selectedListId);
+    } else {
+      console.log("Routing to loadCalDAVList()");
+      this.loadCalDAVList();
+    }
+    console.log("=== HOMESCREEN INIT END ===");
+  }
+
+  /**
+   * Load local list from device storage
+   */
+  loadLocalList(listId) {
+    console.log("=== LOAD LOCAL LIST START ===");
+    console.log("listId:", listId);
+
+    this.cachedMode = true;
+    this.taskLists = [];  // CRITICAL: Don't populate with local lists
+    console.log("Set cachedMode = true, taskLists = []");
+
+    const localHandler = tasksProvider.getCachedHandler();
+    console.log("Got localHandler");
+
+    const listWrapper = localHandler.getTaskList(listId);
+    console.log("listWrapper:", listWrapper ? "Found" : "NULL");
+
+    if (!listWrapper) {
+      // List not found - Need to fetch CalDAV lists before showing picker
+      console.log("ERROR: Local list not found! Fetching CalDAV lists then opening picker...");
+      const hideSpinner = createSpinner();
+
+      tasksProvider.init().then(() => {
+        return tasksProvider.getTaskLists();
+      }).then((lists) => {
+        hideSpinner();
+        this.taskLists = lists;  // Now we have CalDAV lists
+        this.cachedMode = false;  // Switch to CalDAV mode
+        this.openTaskListPicker("browse");
+      }).catch((e) => {
+        hideSpinner();
+        console.log("ERROR: Failed to fetch CalDAV lists:", e);
+        hmUI.showToast({ text: t("List not found") });
+      });
+      return;
+    }
+
+    console.log("List found - ID:", listWrapper.id, "Title:", listWrapper.title);
+    this.currentList = listWrapper;
+
+    const withComplete = config.get("withComplete", false);
+    const sortMode = config.get("sortMode", "none");
+    console.log("withComplete:", withComplete, "sortMode:", sortMode);
+
+    this.currentList.getTasks(withComplete).then((taskData) => {
+      console.log("getTasks() returned");
+      if (!taskData) {
+        console.log("ERROR: taskData is null!");
+        return;
+      }
+
+      console.log("taskData.tasks count:", taskData.tasks.length);
+      this.taskData = taskData;
+      this.taskData.tasks = this.sortTasks(this.taskData.tasks);
+      console.log("After sort, tasks count:", this.taskData.tasks.length);
+      console.log("Building UI...");
+      this.build();
+      console.log("=== LOAD LOCAL LIST END ===");
+    }).catch((error) => {
+      console.log("ERROR in getTasks():", error);
+      hmUI.showToast({ text: t("Failed to load list") });
+    });
+  }
+
+  /**
+   * Load CalDAV list from server
+   */
+  loadCalDAVList() {
+    this.cachedMode = false;
+    this.hideSpinner = createSpinner();
+    this.onlineInit();
   }
 
   /**
@@ -132,8 +217,7 @@ class HomeScreen extends ConfiguredListScreen {
         }
       }
 
-      return tasksProvider.execCachedLog();
-    }).then(() => {
+      // Get tasks from current list
       if (!this.currentList) {
         console.log("currentList is null, cannot getTasks");
         return null;
@@ -163,17 +247,6 @@ class HomeScreen extends ConfiguredListScreen {
       // Cache for offline use
       if (!config.get("forever_offline") && !this.params.page) {
         this.cacheCurrentData();
-      }
-
-      // If this was a forced sync while in offline mode, go back to offline
-      if (this.params.forceOnline && config.get("offlineMode", false)) {
-        this.hideSpinner();
-        hmUI.showToast({ text: t("Sync complete") });
-        replace({
-          url: "page/amazfit/HomeScreen",
-          param: JSON.stringify({})
-        });
-        return;
       }
 
       this.cachedMode = false;
@@ -239,19 +312,55 @@ class HomeScreen extends ConfiguredListScreen {
    * Open task list picker (as new pane or replace current)
    */
   openTaskListPicker(mode, shouldReplace = false) {
-    const paramObj = {
-      lists: this.taskLists,
-      mode
-    };
-    // Store params in config as workaround for API 3.0 push/replace not passing params
-    config.set("_taskListPickerParams", paramObj);
+    console.log("=== OPEN TASK LIST PICKER ===");
+    console.log("mode:", mode);
+    console.log("shouldReplace:", shouldReplace);
+    console.log("this.cachedMode:", this.cachedMode);
+    console.log("this.taskLists.length:", this.taskLists.length);
 
-    const params = {
-      url: `page/amazfit/TaskListPickerScreen`,
-      param: JSON.stringify(paramObj)
-    };
+    if (this.cachedMode && this.taskLists.length === 0) {
+      // In local mode - fetch CalDAV lists first
+      console.log("In local mode, fetching CalDAV lists...");
+      const hideSpinner = createSpinner();
 
-    shouldReplace ? replace(params) : push(params);
+      tasksProvider.init().then(() => {
+        return tasksProvider.getTaskLists();
+      }).then((lists) => {
+        hideSpinner();
+
+        const paramObj = {
+          lists: lists,
+          mode
+        };
+        // Store params in config as workaround for API 3.0 push/replace not passing params
+        config.set("_taskListPickerParams", paramObj);
+
+        const params = {
+          url: `page/amazfit/TaskListPickerScreen`,
+          param: JSON.stringify(paramObj)
+        };
+
+        shouldReplace ? replace(params) : push(params);
+      }).catch((e) => {
+        hideSpinner();
+        hmUI.showToast({ text: e.message || t("Failed to load lists") });
+      });
+    } else {
+      // Already have CalDAV lists
+      const paramObj = {
+        lists: this.taskLists,
+        mode
+      };
+      // Store params in config as workaround for API 3.0 push/replace not passing params
+      config.set("_taskListPickerParams", paramObj);
+
+      const params = {
+        url: `page/amazfit/TaskListPickerScreen`,
+        param: JSON.stringify(paramObj)
+      };
+
+      shouldReplace ? replace(params) : push(params);
+    }
   }
 
   /**
@@ -317,16 +426,55 @@ class HomeScreen extends ConfiguredListScreen {
   }
 
   /**
+   * Refresh CalDAV list from server
+   */
+  refreshCalDAVList() {
+    const hideSpinner = createSpinner();
+
+    tasksProvider.init().then(() => {
+      return this.currentList.getTasks(config.get("withComplete", false));
+    }).then((taskData) => {
+      if (!taskData) return;
+
+      this.taskData = taskData;
+      this.taskData.tasks = this.sortTasks(this.taskData.tasks);
+
+      // Fetch checklist items for all tasks
+      const checklistPromises = this.taskData.tasks.map((task) => {
+        if (typeof task.getChecklistItems === 'function') {
+          return task.getChecklistItems().then((items) => {
+            task.checklistItems = items;
+          }).catch(() => {
+            task.checklistItems = [];
+          });
+        } else {
+          task.checklistItems = [];
+          return Promise.resolve();
+        }
+      });
+
+      return Promise.all(checklistPromises);
+    }).then(() => {
+      hideSpinner();
+      hmUI.showToast({ text: t("Refreshed") });
+      this.rebuild();
+    }).catch((e) => {
+      hideSpinner();
+      hmUI.showToast({ text: e.message || t("Sync failed") });
+    });
+  }
+
+  /**
    * Build main UI
    */
   build(offlineInfo="") {
     // Header
     this.twoActionBar([
       {
-        text: this.cachedMode ? getOfflineInfo(offlineInfo) : this.currentList.title,
+        text: this.currentList.title,
         color: this.cachedMode ? 0xFF9900 : 0xFFFFFF,
-        icon: `icon_s/mode_${this.cachedMode ? "cached" : "online"}.png`,
-        callback: () => this.openTaskListPicker(this.cachedMode ? "cached": "online")
+        icon: `icon_s/mode_${this.cachedMode ? "local" : "online"}.png`,
+        callback: () => this.openTaskListPicker(this.cachedMode ? "browse": "online")
       },
       {
         text: t("New…"),
@@ -348,6 +496,24 @@ class HomeScreen extends ConfiguredListScreen {
     }
 
     this.taskData.nextPageToken ? this.moreButton() : this.offset();
+
+    // Pull-to-refresh for CalDAV lists only
+    if (!this.cachedMode && config.get("pullToRefresh", false)) {
+      this.lastSwipeTime = 0;
+      AppGesture.init();
+      AppGesture.on("down", () => {
+        const now = Date.now();
+        if (now - this.lastSwipeTime < 1000) {
+          // Double swipe detected - refresh CalDAV list
+          this.refreshCalDAVList();
+        } else {
+          // First swipe - show hint
+          hmUI.showToast({ text: t("Swipe again to sync") });
+          this.lastSwipeTime = now;
+        }
+        return true;
+      });
+    }
   }
 
   /**
@@ -884,38 +1050,28 @@ class HomeScreen extends ConfiguredListScreen {
 // noinspection JSCheckFunctionSignatures
 Page({
   onInit(params) {
+    console.log("=== PAGE.ONINIT CALLED ===");
+    console.log("params:", JSON.stringify(params));
+
     setStatusBarVisible(true);
     updateStatusBarTitle(t("Tasks"));
 
     setWakeUpRelaunch({ relaunch: true });
     setPageBrightTime({ brightTime: 15000 });
 
-    // Pull-to-refresh: double swipe down to sync (if enabled)
-    if (config.get("pullToRefresh", false)) {
-      let lastSwipe = 0;
-      AppGesture.init();
-      AppGesture.on("down", () => {
-        const now = Date.now();
-        if (now - lastSwipe < 1000) {
-          // Second swipe within 1 second - trigger sync
-          hmUI.showToast({ text: t("Syncing...") });
-          replace({
-            url: "page/amazfit/HomeScreen",
-            param: JSON.stringify({ forceOnline: true })
-          });
-        } else {
-          // First swipe - show hint
-          hmUI.showToast({ text: t("Swipe again to sync") });
-          lastSwipe = now;
-        }
-        return true;
-      });
-    }
-
+    console.log("About to create HomeScreen instance...");
     try {
-      new HomeScreen(params).init();
+      const homeScreen = new HomeScreen(params);
+      console.log("HomeScreen instance created successfully");
+      console.log("About to call init()...");
+      homeScreen.init();
+      console.log("init() completed successfully");
     } catch(e) {
-      console.log(e);
+      console.log("!!! EXCEPTION IN PAGE.ONINIT !!!");
+      console.log("Error:", e);
+      console.log("Error message:", e ? e.message : "null");
+      console.log("Error stack:", e ? e.stack : "null");
+      console.log("Error toString:", e ? e.toString() : "null");
     }
   },
 

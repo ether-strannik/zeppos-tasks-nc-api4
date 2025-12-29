@@ -1,35 +1,46 @@
 import {CachedTaskList} from "./CachedTaskList";
 
 /**
- * Handler for accessing all cached task lists offline
+ * Handler for local task lists (stored on device)
  */
-export class CachedHandler {
+export class LocalHandler {
     constructor(config) {
         this.config = config;
         this.cantListCompleted = false;
     }
 
     getTaskLists() {
-        const cachedLists = this.config.get("cachedLists", []);
+        const localLists = this.config.get("localLists", []);
         return Promise.resolve(
-            cachedLists.map(list => new CachedListWrapper(list, this.config))
+            localLists.map(list => new LocalListWrapper(list, this.config))
         );
     }
 
     getTaskList(id) {
-        const cachedLists = this.config.get("cachedLists", []);
-        const listData = cachedLists.find(l => l.id === id);
+        console.log("=== LocalHandler.getTaskList() ===");
+        console.log("Looking for ID:", id);
+
+        const localLists = this.config.get("localLists", []);
+        console.log("localLists from config:", JSON.stringify(localLists));
+        console.log("localLists count:", localLists.length);
+
+        const listData = localLists.find(l => l.id === id);
+        console.log("listData found:", listData ? "YES" : "NO");
+
         if (listData) {
-            return new CachedListWrapper(listData, this.config);
+            console.log("Returning LocalListWrapper for:", listData.id, listData.title);
+            return new LocalListWrapper(listData, this.config);
         }
+
+        console.log("Returning null - list not found");
         return null;
     }
 }
 
 /**
- * Wrapper for a cached task list
+ * Wrapper for a local task list
  */
-class CachedListWrapper {
+class LocalListWrapper {
     constructor(data, config) {
         this.id = data.id;
         this.title = data.title;
@@ -38,8 +49,13 @@ class CachedListWrapper {
     }
 
     getTasks(withComplete = false, page = null) {
-        const tasks = this._tasks.map(taskData =>
-            new CachedTaskWrapper(taskData, this, this.config)
+        // Always read fresh data from config to pick up any changes
+        const localLists = this.config.get("localLists", []);
+        const listData = localLists.find(l => l.id === this.id);
+        const taskList = listData ? listData.tasks : [];
+
+        const tasks = taskList.map(taskData =>
+            new LocalTask(taskData, this, this.config)
         );
 
         const filtered = withComplete
@@ -55,14 +71,13 @@ class CachedListWrapper {
     getTask(id) {
         const taskData = this._tasks.find(t => t.id === id);
         if (taskData) {
-            return new CachedTaskWrapper(taskData, this, this.config);
+            return new LocalTask(taskData, this, this.config);
         }
         return null;
     }
 
     insertTask(title) {
-        const log = this.config.get("log", []);
-        const cachedLists = this.config.get("cachedLists", []);
+        const localLists = this.config.get("localLists", []);
         const nextId = this.config.get("next_id", 0);
 
         const newTask = {
@@ -70,37 +85,81 @@ class CachedListWrapper {
             title: title,
             completed: false,
             important: false,
-            checklistItems: []
+            checklistItems: [],
+            subtasks: [],
+            priority: 0,
+            status: "NEEDS-ACTION"
         };
 
-        // Update cached lists
-        const listIndex = cachedLists.findIndex(l => l.id === this.id);
+        // Update local lists
+        const listIndex = localLists.findIndex(l => l.id === this.id);
         if (listIndex >= 0) {
-            cachedLists[listIndex].tasks.unshift(newTask);
+            localLists[listIndex].tasks.unshift(newTask);
         }
 
-        // Log for sync
-        log.push({
-            command: "insert_task",
-            listId: this.id,
-            id: nextId,
-            title: title
-        });
-
         this.config.update({
-            cachedLists: cachedLists,
-            log: log,
+            localLists: localLists,
             next_id: nextId + 1
         });
 
-        return Promise.resolve(new CachedTaskWrapper(newTask, this, this.config));
+        return Promise.resolve(new LocalTask(newTask, this, this.config));
+    }
+
+    insertSubtask(title, parentUid) {
+        const localLists = this.config.get("localLists", []);
+        const listIndex = localLists.findIndex(l => l.id === this.id);
+
+        if (listIndex < 0) {
+            return Promise.reject(new Error("List not found"));
+        }
+
+        const tasks = localLists[listIndex].tasks;
+        const nextId = this.config.get("next_id", 0);
+        const subtaskId = `cached:${nextId}`;
+
+        const newSubtask = {
+            id: subtaskId,
+            uid: subtaskId,
+            title: title,
+            completed: false,
+            checklistItems: [],
+            subtasks: [],
+            priority: 0,
+            status: "NEEDS-ACTION"
+        };
+
+        // Find parent and add subtask recursively
+        const findAndAddSubtask = (taskList) => {
+            for (let task of taskList) {
+                if (task.id === parentUid || task.uid === parentUid) {
+                    if (!task.subtasks) task.subtasks = [];
+                    task.subtasks.push(newSubtask);
+                    return true;
+                }
+                if (task.subtasks && findAndAddSubtask(task.subtasks)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        if (!findAndAddSubtask(tasks)) {
+            return Promise.reject(new Error("Parent task not found"));
+        }
+
+        this.config.update({
+            localLists: localLists,
+            next_id: nextId + 1
+        });
+
+        return Promise.resolve();
     }
 }
 
 /**
- * Wrapper for a cached task
+ * Wrapper for a local task
  */
-class CachedTaskWrapper {
+class LocalTask {
     constructor(data, list, config) {
         this.id = data.id;
         this.title = data.title;
@@ -116,7 +175,7 @@ class CachedTaskWrapper {
         this.dueDate = data.dueDate ? new Date(data.dueDate) : null;
         this.location = data.location || "";
         this.geo = data.geo || null;
-        this.subtasks = (data.subtasks || []).map(s => new CachedTaskWrapper(s, list, config));
+        this.subtasks = (data.subtasks || []).map(s => new LocalTask(s, list, config));
         this.list = list;
         this.config = config;
     }
@@ -152,13 +211,13 @@ class CachedTaskWrapper {
     }
 
     _updateTask(updates) {
-        const cachedLists = this.config.get("cachedLists", []);
-        const listIndex = cachedLists.findIndex(l => l.id === this.list.id);
+        const localLists = this.config.get("localLists", []);
+        const listIndex = localLists.findIndex(l => l.id === this.list.id);
         if (listIndex >= 0) {
-            const taskIndex = cachedLists[listIndex].tasks.findIndex(t => t.id === this.id);
+            const taskIndex = localLists[listIndex].tasks.findIndex(t => t.id === this.id);
             if (taskIndex >= 0) {
-                Object.assign(cachedLists[listIndex].tasks[taskIndex], updates);
-                this.config.update({ cachedLists: cachedLists });
+                Object.assign(localLists[listIndex].tasks[taskIndex], updates);
+                this.config.update({ localLists: localLists });
             }
         }
     }
@@ -172,7 +231,6 @@ class CachedTaskWrapper {
     }
 
     setStatus(newStatus) {
-        const log = this.config.get("log", []);
         this._updateTask({
             status: newStatus,
             completed: newStatus === "COMPLETED",
@@ -181,14 +239,6 @@ class CachedTaskWrapper {
         this.status = newStatus;
         this.completed = newStatus === "COMPLETED";
         this.inProgress = newStatus === "IN-PROCESS";
-
-        log.push({
-            command: "set_status",
-            listId: this.list.id,
-            id: this.id,
-            value: newStatus
-        });
-        this.config.update({ log: log });
 
         return Promise.resolve();
     }
@@ -203,76 +253,34 @@ class CachedTaskWrapper {
     }
 
     setTitle(value) {
-        const log = this.config.get("log", []);
         this._updateTask({ title: value });
         this.title = value;
-
-        log.push({
-            command: "set_title",
-            listId: this.list.id,
-            id: this.id,
-            value: value
-        });
-        this.config.update({ log: log });
-
         return Promise.resolve();
     }
 
     setDescription(value) {
-        const log = this.config.get("log", []);
         this._updateTask({ description: value });
         this.description = value;
-
-        log.push({
-            command: "set_description",
-            listId: this.list.id,
-            id: this.id,
-            value: value
-        });
-        this.config.update({ log: log });
-
         return Promise.resolve();
     }
 
     setImportant(value) {
-        const log = this.config.get("log", []);
         this._updateTask({ important: value });
         this.important = value;
-
-        log.push({
-            command: "set_important",
-            listId: this.list.id,
-            id: this.id,
-            value: value
-        });
-        this.config.update({ log: log });
-
         return Promise.resolve();
     }
 
     setPriority(value) {
-        const log = this.config.get("log", []);
         value = parseInt(value, 10) || 0;
         if (value < 0) value = 0;
         if (value > 9) value = 9;
 
         this._updateTask({ priority: value });
         this.priority = value;
-
-        log.push({
-            command: "set_priority",
-            listId: this.list.id,
-            id: this.id,
-            value: value
-        });
-        this.config.update({ log: log });
-
         return Promise.resolve();
     }
 
     setLocation(lat, lon, locationText = "") {
-        const log = this.config.get("log", []);
-
         if (lat !== null && lon !== null) {
             this.geo = { lat, lon };
         } else {
@@ -281,60 +289,30 @@ class CachedTaskWrapper {
         this.location = locationText || "";
 
         this._updateTask({ geo: this.geo, location: this.location });
-
-        log.push({
-            command: "set_location",
-            listId: this.list.id,
-            id: this.id,
-            lat: lat,
-            lon: lon,
-            locationText: locationText
-        });
-        this.config.update({ log: log });
-
         return Promise.resolve();
     }
 
     delete() {
-        const log = this.config.get("log", []);
-        const cachedLists = this.config.get("cachedLists", []);
+        const localLists = this.config.get("localLists", []);
 
-        const listIndex = cachedLists.findIndex(l => l.id === this.list.id);
+        const listIndex = localLists.findIndex(l => l.id === this.list.id);
         if (listIndex >= 0) {
-            cachedLists[listIndex].tasks = cachedLists[listIndex].tasks.filter(
+            localLists[listIndex].tasks = localLists[listIndex].tasks.filter(
                 t => t.id !== this.id
             );
-            this.config.update({ cachedLists: cachedLists });
+            this.config.update({ localLists: localLists });
         }
-
-        log.push({
-            command: "delete",
-            listId: this.list.id,
-            id: this.id
-        });
-        this.config.update({ log: log });
 
         return Promise.resolve();
     }
 
     setChecklistItemChecked(itemId, isChecked) {
-        const log = this.config.get("log", []);
-
         // Update local cache
         const item = this.checklistItems.find(i => i.id === itemId);
         if (item) {
             item.isChecked = isChecked;
             this._updateTask({ checklistItems: this.checklistItems });
         }
-
-        log.push({
-            command: "set_checklist_checked",
-            listId: this.list.id,
-            taskId: this.id,
-            itemId: itemId,
-            value: isChecked
-        });
-        this.config.update({ log: log });
 
         return Promise.resolve();
     }
