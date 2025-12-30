@@ -124,22 +124,42 @@ export function calculateTriggerTimes(task) {
 
     // If no valarm triggers found, try to use task.alarm (UI reminder property)
     if (triggers.length === 0 && task.alarm !== null && task.alarm !== undefined) {
-        console.log('No VALARM found, using task.alarm:', task.alarm);
+        console.log('No VALARM found, using task.alarm:', JSON.stringify(task.alarm));
 
         // task.alarm can be:
-        // - A number (minutes before due, negative for before)
-        // - A Date object (absolute time)
+        // - An object { type: 'relative', minutes: X } (minutes before due)
+        // - An object { type: 'absolute', date: X } (absolute time)
+        // - A number (minutes before due, legacy format)
+        // - A Date object (absolute time, legacy format)
         // - 0 (at due time)
-        if (typeof task.alarm === 'number') {
-            // Offset in minutes (negative = before due)
+        if (typeof task.alarm === 'object' && task.alarm !== null) {
+            if (task.alarm.type === 'relative' && typeof task.alarm.minutes === 'number') {
+                // Relative alarm: minutes before due
+                const minutes = task.alarm.minutes;
+                triggers = [{ offset: -Math.abs(minutes), unit: 'minutes' }];
+                console.log(`Parsed relative alarm: ${minutes} minutes before due`);
+            } else if (task.alarm.type === 'absolute' && task.alarm.date) {
+                // Absolute alarm: specific date/time
+                const alarmDate = new Date(task.alarm.date);
+                if (!isNaN(alarmDate.getTime())) {
+                    const offsetMs = alarmDate.getTime() - dueDate.getTime();
+                    const offsetMinutes = Math.floor(offsetMs / (60 * 1000));
+                    triggers = [{ offset: offsetMinutes, unit: 'minutes' }];
+                    console.log(`Parsed absolute alarm: ${alarmDate.toISOString()}, offset ${offsetMinutes} min`);
+                }
+            }
+        } else if (typeof task.alarm === 'number') {
+            // Legacy format: Offset in minutes (negative = before due)
             triggers = [{ offset: -Math.abs(task.alarm), unit: 'minutes' }];
+            console.log(`Parsed legacy number alarm: ${task.alarm} minutes`);
         } else if (task.alarm instanceof Date || typeof task.alarm === 'string') {
-            // Absolute time - calculate offset from due date
+            // Legacy format: Absolute time - calculate offset from due date
             const alarmDate = new Date(task.alarm);
             if (!isNaN(alarmDate.getTime())) {
                 const offsetMs = alarmDate.getTime() - dueDate.getTime();
                 const offsetMinutes = Math.floor(offsetMs / (60 * 1000));
                 triggers = [{ offset: offsetMinutes, unit: 'minutes' }];
+                console.log(`Parsed legacy date alarm: ${alarmDate.toISOString()}, offset ${offsetMinutes} min`);
             }
         }
     }
@@ -180,7 +200,19 @@ export function hasValidVALARM(task) {
     // Accept either task.valarm (CalDAV VALARM array) or task.alarm (UI reminder property)
     // task.valarm might not be populated until task syncs, but task.alarm is set immediately
     const hasValarm = task.valarm && task.valarm.length > 0;
-    const hasAlarm = task.alarm !== null && task.alarm !== undefined;
+
+    // task.alarm can be an object { type, minutes/date } or legacy number/Date
+    let hasAlarm = false;
+    if (task.alarm !== null && task.alarm !== undefined) {
+        if (typeof task.alarm === 'object') {
+            // Object format: { type: 'relative', minutes: X } or { type: 'absolute', date: X }
+            hasAlarm = (task.alarm.type === 'relative' && typeof task.alarm.minutes === 'number') ||
+                       (task.alarm.type === 'absolute' && task.alarm.date);
+        } else {
+            // Legacy format: number or Date
+            hasAlarm = true;
+        }
+    }
 
     return hasValarm || hasAlarm;
 }
