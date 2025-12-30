@@ -319,8 +319,29 @@ class HomeScreen extends ConfiguredListScreen {
     console.log("this.cachedMode:", this.cachedMode);
     console.log("this.taskLists.length:", this.taskLists.length);
 
+    const isOfflineMode = config.get("forever_offline", false);
+    console.log("forever_offline:", isOfflineMode);
+
+    // Helper to navigate to TaskListPickerScreen
+    const navigateToListPicker = (lists) => {
+      const paramObj = { lists, mode };
+      config.set("_taskListPickerParams", paramObj);
+      const params = {
+        url: `page/amazfit/TaskListPickerScreen`,
+        param: JSON.stringify(paramObj)
+      };
+      shouldReplace ? replace(params) : push(params);
+    };
+
+    // If in offline mode, skip CalDAV fetch - go directly to list picker
+    if (isOfflineMode) {
+      console.log("In offline mode, skipping CalDAV fetch");
+      navigateToListPicker([]);
+      return;
+    }
+
     if (this.cachedMode && this.taskLists.length === 0) {
-      // In local mode - fetch CalDAV lists first
+      // In local mode but not offline - try to fetch CalDAV lists
       console.log("In local mode, fetching CalDAV lists...");
       const hideSpinner = createSpinner();
 
@@ -328,39 +349,16 @@ class HomeScreen extends ConfiguredListScreen {
         return tasksProvider.getTaskLists();
       }).then((lists) => {
         hideSpinner();
-
-        const paramObj = {
-          lists: lists,
-          mode
-        };
-        // Store params in config as workaround for API 3.0 push/replace not passing params
-        config.set("_taskListPickerParams", paramObj);
-
-        const params = {
-          url: `page/amazfit/TaskListPickerScreen`,
-          param: JSON.stringify(paramObj)
-        };
-
-        shouldReplace ? replace(params) : push(params);
+        navigateToListPicker(lists);
       }).catch((e) => {
         hideSpinner();
-        hmUI.showToast({ text: e.message || t("Failed to load lists") });
+        console.log("CalDAV list fetch failed:", e.message);
+        // Still navigate with empty CalDAV lists
+        navigateToListPicker([]);
       });
     } else {
       // Already have CalDAV lists
-      const paramObj = {
-        lists: this.taskLists,
-        mode
-      };
-      // Store params in config as workaround for API 3.0 push/replace not passing params
-      config.set("_taskListPickerParams", paramObj);
-
-      const params = {
-        url: `page/amazfit/TaskListPickerScreen`,
-        param: JSON.stringify(paramObj)
-      };
-
-      shouldReplace ? replace(params) : push(params);
+      navigateToListPicker(this.taskLists);
     }
   }
 

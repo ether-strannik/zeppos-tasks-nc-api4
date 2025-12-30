@@ -40,7 +40,6 @@
             "page/amazfit/CategoryPickerScreen",
             "page/amazfit/AddEventScreen",
             "page/amazfit/FontSizeSetupScreen",
-            "page/amazfit/DonatePage",
             "page/amazfit/MarkdownReader",
             "page/amazfit/NewNoteScreen",
             "page/amazfit/LocalListsManageScreen",

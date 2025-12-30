@@ -155,7 +155,7 @@ export function getOfflineInfo(err) {
 
   switch(err) {
     case "login_first":
-      return t("Log into your Google account via Zepp app to use all features");
+      return t("Log into your Nextcloud account via Zepp app to use all features");
     default:
       return err;
   }
