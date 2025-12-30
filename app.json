@@ -43,7 +43,10 @@
             "page/amazfit/DonatePage",
             "page/amazfit/MarkdownReader",
             "page/amazfit/NewNoteScreen",
-            "page/amazfit/LocalListsManageScreen"
+            "page/amazfit/LocalListsManageScreen",
+            "page/amazfit/AppBasedReminderSettings",
+            "page/amazfit/TaskReminderPopup",
+            "page/amazfit/DurationPickerScreen"
           ]
         },
         "app-service": {

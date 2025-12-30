@@ -9,6 +9,7 @@ import {TimePicker} from "../../lib/mmk/TimePicker";
 import {PriorityPicker} from "../../lib/mmk/PriorityPicker";
 import {AppGesture} from "../../lib/mmk/AppGesture";
 import {createSpinner, log, flushLog, request} from "../Utils";
+import {getAppReminderSettings, isAppReminderEnabled, cancelTaskAlarms} from "../../utils/app-reminder-manager";
 
 const { t, config, tasksProvider } = getApp()._options.globalData
 
@@ -216,6 +217,18 @@ class TaskEditScreen extends ListScreen {
           text: t("Clear reminder"),
           icon: "icon_s/delete.png",
           callback: () => this.clearAlarm()
+        });
+
+        // App-based reminders (only show if alarm is set)
+        const appReminderEnabled = isAppReminderEnabled(this.task.uid);
+        const appReminderText = appReminderEnabled
+          ? t("App-based reminders: Enabled")
+          : t("App-based reminders");
+
+        this.row({
+          text: appReminderText,
+          icon: "icon_s/alarm.png",
+          callback: () => this.showAppBasedReminderSettings()
         });
       }
     }
@@ -473,6 +486,37 @@ class TaskEditScreen extends ListScreen {
   }
 
   /**
+   * Open app-based reminder settings screen
+   */
+  showAppBasedReminderSettings() {
+    // Pass essential task data directly - getTask() creates empty shell without fetching
+    const paramObj = {
+      list_id: this.listId,
+      task_id: this.taskId,
+      // Include task data needed for app-based reminders
+      task_data: {
+        uid: this.task.uid,
+        title: this.task.title,
+        dueDate: this.task.dueDate ? this.task.dueDate.toISOString() : null,
+        alarm: this.task.alarm,
+        valarm: this.task.valarm
+      }
+    };
+
+    // Save params for AppBasedReminderSettings
+    config.set("_appReminderSettingsParams", paramObj);
+    console.log("showAppBasedReminderSettings: Saved params with task_data");
+
+    // Also restore TaskEditScreen params to config so they're available when back() returns here
+    config.set("_editTaskParams", { list_id: this.listId, task_id: this.taskId });
+
+    push({
+      url: "page/amazfit/AppBasedReminderSettings",
+      param: JSON.stringify(paramObj)
+    });
+  }
+
+  /**
    * Open time picker (remind me in X hours/minutes from now)
    */
   showDurationPicker() {
@@ -605,6 +649,12 @@ class TaskEditScreen extends ListScreen {
 
     this.isSaving = true;
     createSpinner();
+
+    // Cancel app-based reminder alarms when VALARM is cleared
+    if (this.task.uid) {
+      console.log("Cancelling app-based reminder alarms for task (VALARM cleared):", this.task.uid);
+      cancelTaskAlarms(this.task.uid);
+    }
 
     this.task.setAlarm(null).then((resp) => {
       if (resp && resp.error) {
@@ -784,6 +834,12 @@ class TaskEditScreen extends ListScreen {
 
     this.isSaving = true;
     this.deleteRow.setText(t("Deleting…"));
+
+    // Cancel app-based reminder alarms before deleting task
+    if (this.task.uid) {
+      console.log("Cancelling app-based reminder alarms for task:", this.task.uid);
+      cancelTaskAlarms(this.task.uid);
+    }
 
     createSpinner();
     this.task.delete().then((resp) => {

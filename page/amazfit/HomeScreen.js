@@ -8,6 +8,7 @@ import {createSpinner, getOfflineInfo, log, flushLog} from "../Utils";
 import {ConfiguredListScreen} from "../ConfiguredListScreen";
 import {TouchEventManager} from "../../lib/mmk/TouchEventManager";
 import {AppGesture} from "../../lib/mmk/AppGesture";
+import {cancelTaskAlarms} from "../../utils/app-reminder-manager";
 
 const {t, config, tasksProvider, messageBuilder} = getApp()._options.globalData
 
@@ -367,11 +368,17 @@ class HomeScreen extends ConfiguredListScreen {
    * Open new note creation UI
    */
   openNewNoteUI() {
+    const paramObj = {
+      list: this.currentList.id
+    };
+
+    // Save params to config as workaround for API 3.0 push() not passing params
+    config.set("_newNoteParams", paramObj);
+    console.log("openNewNoteUI: Saved params to config:", JSON.stringify(paramObj));
+
     push({
       url: `page/amazfit/NewNoteScreen`,
-      param: JSON.stringify({
-        list: this.currentList.id
-      })
+      param: JSON.stringify(paramObj)
     });
   }
 
@@ -611,6 +618,12 @@ class HomeScreen extends ConfiguredListScreen {
             } else {
               data.setCompleted(completed);
             }
+
+            // Cancel app-based reminder alarms when task is marked completed
+            if (completed && data.uid) {
+              console.log("Task marked completed - cancelling app-based reminder alarms:", data.uid);
+              cancelTaskAlarms(data.uid);
+            }
           } catch(e) {
             hmUI.showToast({ text: e.message });
             return;
@@ -849,6 +862,12 @@ class HomeScreen extends ConfiguredListScreen {
             subtask.setCompleted(completed).catch(() => {
               hmUI.showToast({ text: t("Failed to update") });
             });
+          }
+
+          // Cancel app-based reminder alarms when subtask is marked completed
+          if (completed && subtask.uid) {
+            console.log("Subtask marked completed - cancelling app-based reminder alarms:", subtask.uid);
+            cancelTaskAlarms(subtask.uid);
           }
         }
 
