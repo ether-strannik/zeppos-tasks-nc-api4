@@ -230,13 +230,13 @@ Page({
 
         // Buttons
         const buttonY = DEVICE_HEIGHT - 280;
-        const buttonW = DEVICE_WIDTH - 80;
+        const buttonW = DEVICE_WIDTH - 160;
         const buttonH = 60;
         const gap = 10;
 
         // Complete Task button (green)
         hmUI.createWidget(hmUI.widget.BUTTON, {
-            x: 40,
+            x: 80,
             y: buttonY,
             w: buttonW,
             h: buttonH,
@@ -250,7 +250,7 @@ Page({
 
         // Snooze button (orange)
         hmUI.createWidget(hmUI.widget.BUTTON, {
-            x: 40,
+            x: 80,
             y: buttonY + buttonH + gap,
             w: buttonW,
             h: buttonH,
@@ -264,7 +264,7 @@ Page({
 
         // Dismiss button (red)
         hmUI.createWidget(hmUI.widget.BUTTON, {
-            x: 40,
+            x: 80,
             y: buttonY + (buttonH + gap) * 2,
             w: buttonW,
             h: buttonH,
