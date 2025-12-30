@@ -2,7 +2,7 @@ import hmUI, { setStatusBarVisible } from "@zos/ui";
 import { replace, push } from "@zos/router";
 import { Vibrator, VIBRATOR_SCENE_TIMER, VIBRATOR_SCENE_NOTIFICATION } from "@zos/sensor";
 import { create, id } from "@zos/media";
-import { setWakeUpRelaunch } from '@zos/display';
+import { setWakeUpRelaunch, setPageBrightTime } from '@zos/display';
 import { getDeviceInfo } from "@zos/device";
 import { parseTaskAlarmParam, cancelTaskAlarms } from "../../utils/app-reminder-manager";
 
@@ -44,9 +44,9 @@ Page({
             // Continue anyway - we have at least the title from params
         }
 
-        // Keep screen on during alarm
+        // Keep screen on during alarm (use long bright time for API 4.2)
         try {
-            hmApp.setScreenKeep(true);
+            setPageBrightTime({ brightTime: 600000 }); // 10 minutes
             setWakeUpRelaunch({ relaunch: true });
             console.log('Screen keep enabled');
         } catch (e) {
@@ -70,24 +70,34 @@ Page({
     findTaskByUID(uid) {
         console.log('Searching for task with UID:', uid);
 
-        // Get all task lists
-        const lists = tasksProvider.getTaskLists();
-        if (!lists || lists.length === 0) {
-            console.log('No task lists found');
+        try {
+            // Get all task lists
+            const lists = tasksProvider.getTaskLists();
+
+            // Handle case where getTaskLists returns non-iterable value
+            if (!lists || !Array.isArray(lists) || lists.length === 0) {
+                console.log('No task lists available or not an array');
+                return null;
+            }
+
+            // Search each list
+            for (let i = 0; i < lists.length; i++) {
+                const list = lists[i];
+                if (list && typeof list.getTask === 'function') {
+                    const task = list.getTask(uid);
+                    if (task) {
+                        console.log('Found task in list:', list.id);
+                        return task;
+                    }
+                }
+            }
+
+            console.log('Task not found in any list');
+            return null;
+        } catch (e) {
+            console.log('Error in findTaskByUID:', e);
             return null;
         }
-
-        // Search each list
-        for (const list of lists) {
-            const task = list.getTask(uid);
-            if (task) {
-                console.log('Found task in list:', list.id);
-                return task;
-            }
-        }
-
-        console.log('Task not found in any list');
-        return null;
     },
 
     startVibration() {
@@ -407,11 +417,12 @@ Page({
     onDestroy() {
         console.log('=== TASK REMINDER POPUP DESTROY ===');
 
+        // Reset screen brightness to default (API 4.2)
         try {
-            hmApp.setScreenKeep(false);
-            console.log('Screen keep disabled');
+            setPageBrightTime({ brightTime: 15000 }); // Reset to 15 seconds
+            console.log('Screen bright time reset');
         } catch (e) {
-            console.log('Error disabling screen keep:', e);
+            console.log('Error resetting screen bright time:', e);
         }
 
         this.stopAlerts();
