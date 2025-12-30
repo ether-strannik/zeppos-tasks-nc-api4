@@ -126,7 +126,7 @@ class TaskEditScreen extends ListScreen {
       const priorityLabel = this.getPriorityLabel(this.task.priority);
       this.row({
         text: `${priorityLabel} (${this.task.priority})`,
-        icon: "icon_s/edit.png",
+        icon: "icon_s/priority.png",
         callback: () => this.showPriorityEditor()
       });
     }
@@ -159,7 +159,7 @@ class TaskEditScreen extends ListScreen {
         : t("Not set");
       this.startDateRow = this.row({
         text: startDateText,
-        icon: "icon_s/edit.png",
+        icon: "icon_s/calendar.png",
         callback: () => this.showStartDatePicker()
       });
       if (this.task.startDate) {
@@ -180,7 +180,7 @@ class TaskEditScreen extends ListScreen {
         : t("Not set");
       this.dueDateRow = this.row({
         text: dueDateText,
-        icon: "icon_s/edit.png",
+        icon: "icon_s/calendar.png",
         callback: () => this.showDueDatePicker()
       });
       if (this.task.dueDate) {
@@ -207,7 +207,7 @@ class TaskEditScreen extends ListScreen {
 
       this.row({
         text: alarmText,
-        icon: "icon_s/edit.png",
+        icon: "icon_s/alarm.png",
         callback: () => this.showReminderPicker()
       });
 
@@ -253,7 +253,7 @@ class TaskEditScreen extends ListScreen {
       }
       this.locationRow = this.row({
         text: this.task.geo ? t("Update location") : t("Add current location"),
-        icon: "icon_s/edit.png",
+        icon: "icon_s/location.png",
         callback: () => this.captureGPSLocation()
       });
       if (this.task.geo) {

@@ -82,7 +82,7 @@ class AddEventScreen extends ConfiguredListScreen {
     this.offset(16);
     this.row({
       text: t("Save Event"),
-      icon: "icon_s/cb_true.png",
+      icon: "icon_s/save.png",
       callback: () => this.saveEvent()
     });
 
