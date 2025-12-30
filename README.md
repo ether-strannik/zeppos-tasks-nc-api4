@@ -67,7 +67,7 @@ Creates `.zab` file in `dist/` folder.
 
 Zepp OS only supports GET and POST HTTP methods, but CalDAV requires PROPFIND, REPORT, PUT, and DELETE. Direct Nextcloud sync is not possible without the proxy. The proxy translates POST requests with `X-HTTP-Method-Override` headers into proper CalDAV methods.
 
-For architecture details or self-hosting instructions, see [doc/proxy.md](doc/proxy.md)
+For self-hosting instructions, see the [CalDAV Proxy](https://github.com/ether-strannik/caldav-proxy) repository.
 
 ---
 
