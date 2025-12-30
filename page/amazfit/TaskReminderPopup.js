@@ -382,6 +382,9 @@ Page({
 
         console.log('Opening DurationPickerScreen with params:', JSON.stringify(paramObj));
 
+        // Store params in config as workaround for API 3.0/4.0 push() not passing params
+        config.set("_durationPickerParams", paramObj);
+
         push({
             url: 'page/amazfit/DurationPickerScreen',
             param: JSON.stringify(paramObj)

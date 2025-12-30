@@ -19,6 +19,17 @@ Page({
             params = {};
         }
 
+        // Fallback: read from config if push() didn't pass params (API 3.0/4.0 issue)
+        if (!params.taskUID || !params.taskTitle) {
+            const savedParams = config.get("_durationPickerParams");
+            if (savedParams) {
+                console.log("Using fallback params from config:", JSON.stringify(savedParams));
+                params = savedParams;
+                // Clear the saved params
+                config.set("_durationPickerParams", null);
+            }
+        }
+
         this.mode = params.mode; // 'snooze'
         this.taskUID = params.taskUID;
         this.taskTitle = params.taskTitle;
