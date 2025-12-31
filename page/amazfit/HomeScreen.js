@@ -510,7 +510,7 @@ class HomeScreen extends ConfiguredListScreen {
         callback: () => this.openTaskListPicker(this.cachedMode ? "browse": "online")
       },
       {
-        icon: "icon_s/voice.png",
+        icon: "icon_s/microphone.png",
         callback: () => this.openVoiceTaskUI()
       },
       {
