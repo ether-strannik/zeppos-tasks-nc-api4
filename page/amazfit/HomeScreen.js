@@ -1,6 +1,6 @@
 import hmUI from "@zos/ui";
-import { setStatusBarVisible, updateStatusBarTitle } from "@zos/ui";
-import { replace, push } from "@zos/router";
+import { setStatusBarVisible, updateStatusBarTitle, createKeyboard, deleteKeyboard, inputType } from "@zos/ui";
+import { replace, push, back } from "@zos/router";
 import { setWakeUpRelaunch, setPageBrightTime } from "@zos/display";
 import {ICON_SIZE_MEDIUM, ICON_SIZE_SMALL, SCREEN_MARGIN_Y, SCREEN_WIDTH, WIDGET_WIDTH} from "../../lib/mmk/UiParams";
 
@@ -322,6 +322,81 @@ class HomeScreen extends ConfiguredListScreen {
   }
 
   /**
+   * Open voice input for quick task creation
+   * Launches keyboard in voice mode, creates task from transcribed text
+   */
+  openVoiceTaskUI() {
+    this._keyboardActive = true;
+
+    createKeyboard({
+      inputType: inputType.CHAR,
+      text: "",
+      onComplete: (keyboardWidget, result) => {
+        this._keyboardActive = false;
+        try { deleteKeyboard(); } catch (e) { /* ignore */ }
+        this.createTaskFromVoice(result.data);
+      },
+      onCancel: () => {
+        this._keyboardActive = false;
+        try { deleteKeyboard(); } catch (e) { /* ignore */ }
+      }
+    });
+
+    // Switch to voice input mode after keyboard opens
+    setTimeout(() => {
+      if (this._keyboardActive) {
+        try {
+          const zosUi = __$$R$$__('@zos/ui');
+          if (zosUi && zosUi.keyboard && typeof zosUi.keyboard.switchInputType === 'function') {
+            zosUi.keyboard.switchInputType(inputType.VOICE);
+          }
+        } catch (e) {
+          // Voice switch failed, keyboard will stay in text mode
+        }
+      }
+    }, 100);
+  }
+
+  /**
+   * Create task from voice transcription result
+   */
+  createTaskFromVoice(text) {
+    if (!text || text.trim() === "") {
+      return;
+    }
+
+    if (!this.currentList) {
+      hmUI.showToast({ text: t("No list selected") });
+      return;
+    }
+
+    const hideSpinner = createSpinner();
+
+    try {
+      const list = tasksProvider.getTaskList(this.currentList.id);
+
+      if (!list) {
+        hideSpinner();
+        hmUI.showToast({ text: t("List not found") });
+        return;
+      }
+
+      list.insertTask(text.trim()).then(() => {
+        hideSpinner();
+        hmUI.showToast({ text: t("Task created") });
+        // Refresh the list to show the new task
+        this.rebuild();
+      }).catch((error) => {
+        hideSpinner();
+        hmUI.showToast({ text: error.message || t("Failed to create task") });
+      });
+    } catch (error) {
+      hideSpinner();
+      hmUI.showToast({ text: error.message || t("Error") });
+    }
+  }
+
+  /**
    * Sort tasks based on user preference
    */
   sortTasks(tasks) {
@@ -372,6 +447,18 @@ class HomeScreen extends ConfiguredListScreen {
   }
 
   /**
+   * Rebuild the current screen (refresh UI)
+   */
+  rebuild() {
+    replace({
+      url: "page/amazfit/HomeScreen",
+      param: JSON.stringify({
+        fromListPicker: true
+      })
+    });
+  }
+
+  /**
    * Refresh CalDAV list from server
    */
   refreshCalDAVList() {
@@ -414,8 +501,8 @@ class HomeScreen extends ConfiguredListScreen {
    * Build main UI
    */
   build(offlineInfo="") {
-    // Header
-    this.twoActionBar([
+    // Header with three action buttons: [List Title] [Voice] [New]
+    this.threeActionBar([
       {
         text: this.currentList.title,
         color: this.cachedMode ? 0xFF9900 : 0xFFFFFF,
@@ -423,7 +510,10 @@ class HomeScreen extends ConfiguredListScreen {
         callback: () => this.openTaskListPicker(this.cachedMode ? "browse": "online")
       },
       {
-        text: t("New…"),
+        icon: "icon_s/voice.png",
+        callback: () => this.openVoiceTaskUI()
+      },
+      {
         icon: "icon_s/new.png",
         callback: () => this.openNewNoteUI()
       }
