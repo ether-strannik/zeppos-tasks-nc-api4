@@ -38,21 +38,40 @@ class AppBasedReminderSettings extends ListScreen {
         this.taskId = params.task_id;
 
         // Use task_data passed from TaskEditScreen (getTask() doesn't fetch from server)
+        console.log("=== DEBUG CHAIN POINT 2: AppBasedReminderSettings constructor ===");
+        console.log("params object keys:", Object.keys(params || {}));
+        console.log("params.task_data exists:", !!params.task_data);
+
         if (params.task_data) {
             console.log("Using passed task_data");
             const td = params.task_data;
+            console.log("td (task_data) keys:", Object.keys(td || {}));
+            console.log("td.uid:", td.uid);
+            console.log("td.title:", td.title);
+            console.log("td.description:", td.description);
+            console.log("td.description type:", typeof td.description);
+            console.log("td.description length:", td.description?.length);
+
+            const descFromTd = td.description || '';
+            console.log("descFromTd after || '':", descFromTd);
+            console.log("descFromTd length:", descFromTd.length);
+
             this.task = {
                 uid: td.uid,
                 title: td.title,
+                description: descFromTd,
                 dueDate: td.dueDate ? new Date(td.dueDate) : null,
                 alarm: td.alarm,
                 valarm: td.valarm
             };
+            console.log("this.task.description:", this.task.description);
+            console.log("this.task.description length:", this.task.description.length);
             console.log("Task data: uid=", this.task.uid, "dueDate=", this.task.dueDate, "alarm=", JSON.stringify(this.task.alarm));
         } else {
             console.log("No task_data in params");
             this.task = null;
         }
+        console.log("=== END DEBUG CHAIN POINT 2 ===");
 
         if (!this.task || !this.task.uid) {
             console.log("AppBasedReminderSettings: Task data not available");
@@ -244,7 +263,16 @@ class AppBasedReminderSettings extends ListScreen {
 
     save() {
         console.log("=== SCHEDULE APP-BASED REMINDER ===");
+        console.log("=== DEBUG CHAIN POINT 3: AppBasedReminderSettings.save() ===");
+        console.log("this.task object keys:", Object.keys(this.task || {}));
+        console.log("this.task.uid:", this.task?.uid);
+        console.log("this.task.title:", this.task?.title);
+        console.log("this.task.description:", this.task?.description);
+        console.log("this.task.description type:", typeof this.task?.description);
+        console.log("this.task.description length:", this.task?.description?.length);
+        console.log("Full this.task:", JSON.stringify(this.task));
         console.log("Settings:", JSON.stringify(this.settings));
+        console.log("=== END DEBUG CHAIN POINT 3 ===");
 
         // Save snooze duration (global setting)
         if (this.snoozeIndex !== undefined) {
@@ -259,6 +287,7 @@ class AppBasedReminderSettings extends ListScreen {
         setAppReminderSettings(this.task.uid, this.settings);
 
         // Create new alarms - this will add alarmIds and nextTriggerTime to config
+        console.log("Calling createTaskAlarms with task:", JSON.stringify(this.task));
         const alarmIds = createTaskAlarms(this.task, this.settings);
 
         if (alarmIds.length === 0) {

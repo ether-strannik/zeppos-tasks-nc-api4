@@ -498,6 +498,18 @@ class TaskEditScreen extends ListScreen {
    */
   showAppBasedReminderSettings() {
     // Pass essential task data directly - getTask() creates empty shell without fetching
+    console.log("=== DEBUG CHAIN POINT 1: TaskEditScreen.showAppBasedReminderSettings ===");
+    console.log("this.task object keys:", Object.keys(this.task || {}));
+    console.log("this.task.uid:", this.task?.uid);
+    console.log("this.task.title:", this.task?.title);
+    console.log("this.task.description:", this.task?.description);
+    console.log("this.task.description type:", typeof this.task?.description);
+    console.log("this.task.description length:", this.task?.description?.length);
+
+    const descValue = this.task.description || '';
+    console.log("descValue after || '':", descValue);
+    console.log("descValue length:", descValue.length);
+
     const paramObj = {
       list_id: this.listId,
       task_id: this.taskId,
@@ -505,11 +517,16 @@ class TaskEditScreen extends ListScreen {
       task_data: {
         uid: this.task.uid,
         title: this.task.title,
+        description: descValue,
         dueDate: this.task.dueDate ? this.task.dueDate.toISOString() : null,
         alarm: this.task.alarm,
         valarm: this.task.valarm
       }
     };
+
+    console.log("paramObj.task_data.description:", paramObj.task_data.description);
+    console.log("Full paramObj:", JSON.stringify(paramObj));
+    console.log("=== END DEBUG CHAIN POINT 1 ===");
 
     // Save params for AppBasedReminderSettings
     config.set("_appReminderSettingsParams", paramObj);

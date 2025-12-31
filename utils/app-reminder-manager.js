@@ -13,27 +13,56 @@ const { config } = getApp()._options.globalData;
 /**
  * Build OS alarm param string for task reminder
  *
- * Format: task_[uid]_[timestamp]_[title]|V[0/1]|[C/N]|S[0/1]
+ * Format: task_[uid]_[timestamp]_[title]~[description]|V[0/1]|[C/N]|S[0/1]
  *
- * Example: task_caldav-uuid-123_1736949600_Submit project report|V1|C|S1
+ * Example: task_caldav-uuid-123_1736949600_Submit report~Remember to include charts|V1|C|S1
  *
  * @param {string} taskUID - Task UID
  * @param {string} taskTitle - Task title (summary)
+ * @param {string} taskDescription - Task description/notes (optional)
  * @param {number} timestamp - Unix timestamp when alarm fires
  * @param {Object} settings - Alarm settings
  * @returns {string} Formatted param string
  */
-function buildTaskAlarmParam(taskUID, taskTitle, timestamp, settings) {
+function buildTaskAlarmParam(taskUID, taskTitle, taskDescription, timestamp, settings) {
+    console.log("=== DEBUG CHAIN POINT 5: buildTaskAlarmParam ===");
+    console.log("taskUID:", taskUID);
+    console.log("taskTitle:", taskTitle);
+    console.log("taskDescription:", taskDescription);
+    console.log("taskDescription type:", typeof taskDescription);
+    console.log("taskDescription length:", taskDescription?.length);
+    console.log("timestamp:", timestamp);
+
     const vibration = settings.vibrationEnabled ? 'V1' : 'V0';
     const vibrationType = settings.vibrationType || 'C';
     const sound = settings.soundEnabled ? 'S1' : 'S0';
 
     const settingsStr = `${vibration}|${vibrationType}|${sound}`;
 
-    // Sanitize title (remove | and newlines)
-    const cleanTitle = taskTitle.replace(/[\|\n\r]/g, ' ').trim();
+    // Sanitize title (remove | ~ and newlines)
+    const cleanTitle = taskTitle.replace(/[\|~\n\r]/g, ' ').trim();
 
-    return `task_${taskUID}_${timestamp}_${cleanTitle}|${settingsStr}`;
+    // Sanitize and truncate description (max 100 chars to avoid param length issues)
+    let cleanDesc = '';
+    console.log("Before description processing:");
+    console.log("  taskDescription truthy:", !!taskDescription);
+    console.log("  taskDescription?.trim() truthy:", !!(taskDescription && taskDescription.trim()));
+
+    if (taskDescription && taskDescription.trim()) {
+        cleanDesc = taskDescription.replace(/[\|~\n\r]/g, ' ').trim();
+        if (cleanDesc.length > 100) {
+            cleanDesc = cleanDesc.substring(0, 97) + '...';
+        }
+        console.log("  cleanDesc after processing:", cleanDesc);
+    } else {
+        console.log("  Description was empty/falsy, cleanDesc stays empty");
+    }
+
+    const result = `task_${taskUID}_${timestamp}_${cleanTitle}~${cleanDesc}|${settingsStr}`;
+    console.log("Final param string:", result);
+    console.log("=== END DEBUG CHAIN POINT 5 ===");
+
+    return result;
 }
 
 /**
@@ -43,13 +72,14 @@ function buildTaskAlarmParam(taskUID, taskTitle, timestamp, settings) {
  * @returns {Object|null} Parsed components or null if invalid
  *
  * Example input:
- * "task_caldav-uuid-123_1736949600_Submit project report|V1|C|S1"
+ * "task_caldav-uuid-123_1736949600_Submit report~Remember to include charts|V1|C|S1"
  *
  * Example output:
  * {
  *   taskUID: "caldav-uuid-123",
  *   timestamp: 1736949600,
- *   taskTitle: "Submit project report",
+ *   taskTitle: "Submit report",
+ *   taskDescription: "Remember to include charts",
  *   vibrationEnabled: true,
  *   vibrationType: "C",
  *   soundEnabled: true
@@ -60,6 +90,7 @@ export function parseTaskAlarmParam(param) {
         return null;
     }
 
+    // Match: task_[uid]_[timestamp]_[title~description]|[settings]
     const match = param.match(/task_(.+?)_(\d+)_(.+?)\|(.+)/);
 
     if (!match) {
@@ -67,13 +98,26 @@ export function parseTaskAlarmParam(param) {
         return null;
     }
 
-    const [, taskUID, timestamp, taskTitle, settingsStr] = match;
+    const [, taskUID, timestamp, titleAndDesc, settingsStr] = match;
     const [vibration, vibrationType, sound] = settingsStr.split('|');
+
+    // Split title and description by ~
+    const tildeIndex = titleAndDesc.indexOf('~');
+    let taskTitle, taskDescription;
+    if (tildeIndex !== -1) {
+        taskTitle = titleAndDesc.substring(0, tildeIndex);
+        taskDescription = titleAndDesc.substring(tildeIndex + 1);
+    } else {
+        // Backwards compatibility: no ~ means old format without description
+        taskTitle = titleAndDesc;
+        taskDescription = '';
+    }
 
     return {
         taskUID,
         timestamp: parseInt(timestamp),
         taskTitle,
+        taskDescription,
         vibrationEnabled: vibration === 'V1',
         vibrationType,
         soundEnabled: sound === 'S1'
@@ -98,8 +142,15 @@ export function parseTaskAlarmParam(param) {
  */
 export function createTaskAlarms(task, settings) {
     console.log('=== CREATE TASK ALARMS START ===');
+    console.log('=== DEBUG CHAIN POINT 4: createTaskAlarms ===');
     console.log('Task UID:', task.uid);
     console.log('Task title:', task.title);
+    console.log('Task description:', task.description);
+    console.log('Task description type:', typeof task.description);
+    console.log('Task description length:', task.description?.length);
+    console.log('Full task object keys:', Object.keys(task || {}));
+    console.log('Full task JSON:', JSON.stringify(task));
+    console.log('=== END DEBUG CHAIN POINT 4 ===');
 
     const triggerTimes = calculateTriggerTimes(task);
 
@@ -122,7 +173,7 @@ export function createTaskAlarms(task, settings) {
             return;
         }
 
-        const param = buildTaskAlarmParam(task.uid, task.title, timestamp, settings);
+        const param = buildTaskAlarmParam(task.uid, task.title, task.description || '', timestamp, settings);
 
         console.log(`Creating alarm ${index + 1}:`, {
             time: triggerTime.toISOString(),
@@ -220,17 +271,18 @@ export function cancelTaskAlarms(taskUID) {
  *
  * @param {string} taskUID - Task UID
  * @param {string} taskTitle - Task title
+ * @param {string} taskDescription - Task description
  * @param {number} durationMinutes - Snooze duration in minutes
  * @param {Object} settings - Alarm settings (vibration, sound)
  * @returns {number|null} Created alarm ID or null on error
  */
-export function createSnoozeAlarm(taskUID, taskTitle, durationMinutes, settings) {
+export function createSnoozeAlarm(taskUID, taskTitle, taskDescription, durationMinutes, settings) {
     console.log('=== CREATE SNOOZE ALARM START ===');
     console.log('Task UID:', taskUID);
     console.log('Snooze duration:', durationMinutes, 'minutes');
 
     const snoozeTime = Math.floor(Date.now() / 1000) + (durationMinutes * 60);
-    const param = buildTaskAlarmParam(taskUID, taskTitle, snoozeTime, settings);
+    const param = buildTaskAlarmParam(taskUID, taskTitle, taskDescription || '', snoozeTime, settings);
 
     console.log('Snooze time:', new Date(snoozeTime * 1000).toISOString());
     console.log('Param:', param);

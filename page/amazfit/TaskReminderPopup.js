@@ -30,12 +30,14 @@ Page({
 
         this.taskUID = parsed.taskUID;
         this.taskTitle = parsed.taskTitle;
+        this.taskDescription = parsed.taskDescription || '';
         this.vibrationEnabled = parsed.vibrationEnabled;
         this.vibrationType = parsed.vibrationType;
         this.soundEnabled = parsed.soundEnabled;
 
         console.log('Task UID:', this.taskUID);
         console.log('Task Title:', this.taskTitle);
+        console.log('Task Description:', this.taskDescription);
         console.log('Vibration:', this.vibrationEnabled, this.vibrationType);
         console.log('Sound:', this.soundEnabled);
 
@@ -172,43 +174,45 @@ Page({
             color: 0x000000
         });
 
-        let yPos = DEVICE_HEIGHT / 6;
+        let yPos = DEVICE_HEIGHT / 10;
 
-        // Task title (large, prominent)
+        // Task title (smaller, moved higher)
         hmUI.createWidget(hmUI.widget.TEXT, {
             x: 20,
             y: yPos,
             w: DEVICE_WIDTH - 40,
-            h: 120,
+            h: 80,
             text: this.taskTitle,
-            text_size: 36,
+            text_size: 28,
             align_h: hmUI.align.CENTER_H,
             align_v: hmUI.align.CENTER_V,
             color: 0xFFFFFF,
             text_style: hmUI.text_style.WRAP
         });
-        yPos += 130;
+        yPos += 85;
 
-        // Task notes/description (if available)
-        if (this.task && this.task.description && this.task.description.trim()) {
-            const description = this.task.description.trim();
-            const maxLength = 150;
-            const displayText = description.length > maxLength
-                ? description.substring(0, maxLength) + "..."
-                : description;
+        // Task notes/description (if available - from alarm param, not task lookup)
+        console.log('=== BUILD: Checking description ===');
+        console.log('this.taskDescription:', this.taskDescription);
+        console.log('this.taskDescription truthy:', !!this.taskDescription);
+        console.log('trim result:', this.taskDescription ? this.taskDescription.trim() : 'N/A');
+        console.log('trim truthy:', !!(this.taskDescription && this.taskDescription.trim()));
 
+        if (this.taskDescription && this.taskDescription.trim()) {
+            console.log('=== CREATING DESCRIPTION WIDGET ===');
+            console.log('yPos:', yPos);
             hmUI.createWidget(hmUI.widget.TEXT, {
                 x: 20,
                 y: yPos,
                 w: DEVICE_WIDTH - 40,
-                h: 100,
-                text: displayText,
+                h: 80,
+                text: this.taskDescription,
                 text_size: 24,
                 align_h: hmUI.align.CENTER_H,
                 color: 0xAAAAAA,
                 text_style: hmUI.text_style.WRAP
             });
-            yPos += 110;
+            yPos += 85;
         }
 
         // Due date (if available)
@@ -228,51 +232,52 @@ Page({
             yPos += 50;
         }
 
-        // Buttons
-        const buttonY = DEVICE_HEIGHT - 280;
-        const buttonW = DEVICE_WIDTH - 160;
-        const buttonH = 60;
-        const gap = 10;
+        // Buttons (narrower, positioned lower)
+        const buttonY = DEVICE_HEIGHT - 200;
+        const buttonX = Math.floor(DEVICE_WIDTH * 0.2);
+        const buttonW = Math.floor(DEVICE_WIDTH * 0.6);
+        const buttonH = 50;
+        const gap = 8;
 
-        // Complete Task button (green)
+        // Complete button (green)
         hmUI.createWidget(hmUI.widget.BUTTON, {
-            x: 80,
+            x: buttonX,
             y: buttonY,
             w: buttonW,
             h: buttonH,
-            radius: 30,
+            radius: 25,
             normal_color: 0x00AA00,
             press_color: 0x008800,
-            text: t('Complete Task'),
-            text_size: 24,
+            text: t('Complete'),
+            text_size: 22,
             click_func: () => this.completeTask()
         });
 
         // Snooze button (orange)
         hmUI.createWidget(hmUI.widget.BUTTON, {
-            x: 80,
+            x: buttonX,
             y: buttonY + buttonH + gap,
             w: buttonW,
             h: buttonH,
-            radius: 30,
+            radius: 25,
             normal_color: 0xFFAA00,
             press_color: 0xDD8800,
             text: t('Snooze'),
-            text_size: 24,
+            text_size: 22,
             click_func: () => this.snooze()
         });
 
         // Dismiss button (red)
         hmUI.createWidget(hmUI.widget.BUTTON, {
-            x: 80,
+            x: buttonX,
             y: buttonY + (buttonH + gap) * 2,
             w: buttonW,
             h: buttonH,
-            radius: 30,
+            radius: 25,
             normal_color: 0xFF0000,
             press_color: 0xCC0000,
             text: t('Dismiss'),
-            text_size: 24,
+            text_size: 22,
             click_func: () => this.dismiss()
         });
     },
@@ -437,6 +442,7 @@ Page({
         const alarmId = createSnoozeAlarm(
             this.taskUID,
             this.taskTitle,
+            this.taskDescription,
             totalMinutes,
             settings
         );
