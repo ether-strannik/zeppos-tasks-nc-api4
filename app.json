@@ -1,7 +1,7 @@
 {
   "configVersion": "v3",
   "app": {
-    "appId": 1023438,
+    "appId": 1101421,
     "appName": "Tasks NC",
     "appType": "app",
     "version": {
@@ -60,7 +60,12 @@
       },
       "platforms": [
         {
-          "st": "r"
+          "st": "r",
+          "dw": 480
+        },
+        {
+          "st": "s",
+          "dw": 390
         }
       ],
       "designWidth": 480
