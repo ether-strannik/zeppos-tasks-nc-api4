@@ -124,7 +124,7 @@ export function createTaskAlarms(task, settings) {
             });
             alarmIds.push(alarmId);
         } catch (e) {
-            console.log('Error creating alarm:', e);
+            // Alarm creation failed
         }
     }
 
@@ -213,7 +213,6 @@ export function createSnoozeAlarm(taskUID, taskTitle, taskDescription, durationM
 
         return alarmId;
     } catch (e) {
-        console.log('Error creating snooze alarm:', e);
         return null;
     }
 }

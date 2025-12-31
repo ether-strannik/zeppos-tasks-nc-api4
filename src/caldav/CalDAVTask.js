@@ -104,7 +104,6 @@ export class CalDAVTask {
       // Local time
       return new Date(year, month, day, hour, minute, second);
     } catch (e) {
-      console.log("Failed to parse DUE date:", due, e);
       return null;
     }
   }
@@ -126,7 +125,7 @@ export class CalDAVTask {
         }
       }
     } catch (e) {
-      console.log("Failed to parse GEO:", geo, e);
+      // Ignore parse error
     }
     return null;
   }
@@ -186,9 +185,9 @@ export class CalDAVTask {
         return { type: 'absolute', date: date };
       }
 
-      console.log("Unknown TRIGGER format:", trigger);
+      // Unknown TRIGGER format
     } catch (e) {
-      console.log("Failed to parse VALARM:", valarm, e);
+      // Ignore parse error
     }
     return null;
   }
@@ -282,11 +281,9 @@ export class CalDAVTask {
   setTitle(title) {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setTitle: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
-    console.log("setTitle: updating to", title);
     this.title = title;
     vtodo.SUMMARY = title;
     vtodo["LAST-MODIFIED"] = this.getCurrentTimeString();
@@ -298,23 +295,17 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setTitle: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setTitle: error", e);
-      throw e;
     });
   }
 
   setDescription(description) {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setDescription: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
-    console.log("setDescription: updating");
     this.description = description;
     if (description) {
       vtodo.DESCRIPTION = description;
@@ -330,12 +321,8 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setDescription: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setDescription: error", e);
-      throw e;
     });
   }
 
@@ -346,7 +333,6 @@ export class CalDAVTask {
   setPriority(priority) {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setPriority: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
@@ -355,7 +341,6 @@ export class CalDAVTask {
     if (priority < 0) priority = 0;
     if (priority > 9) priority = 9;
 
-    console.log("setPriority: updating to", priority);
     this.priority = priority;
     if (priority > 0) {
       vtodo.PRIORITY = priority.toString();
@@ -371,12 +356,8 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setPriority: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setPriority: error", e);
-      throw e;
     });
   }
 
@@ -387,11 +368,9 @@ export class CalDAVTask {
   setStartDate(date) {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setStartDate: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
-    console.log("setStartDate: updating to", date);
 
     // Remove any existing DTSTART variants (with or without parameters)
     for (const key of Object.keys(vtodo)) {
@@ -423,12 +402,8 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setStartDate: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setStartDate: error", e);
-      throw e;
     });
   }
 
@@ -439,11 +414,9 @@ export class CalDAVTask {
   setDueDate(date) {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setDueDate: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
-    console.log("setDueDate: updating to", date);
 
     // Remove any existing DUE variants (with or without parameters)
     for (const key of Object.keys(vtodo)) {
@@ -475,12 +448,8 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setDueDate: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setDueDate: error", e);
-      throw e;
     });
   }
 
@@ -492,11 +461,9 @@ export class CalDAVTask {
   setDueDateWithAlarm(date, alarmMinutes = 0) {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setDueDateWithAlarm: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
-    console.log("setDueDateWithAlarm: due=", date, "alarm=", alarmMinutes, "min before");
 
     // Remove any existing DUE variants
     for (const key of Object.keys(vtodo)) {
@@ -556,12 +523,8 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setDueDateWithAlarm: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setDueDateWithAlarm: error", e);
-      throw e;
     });
   }
 
@@ -574,11 +537,9 @@ export class CalDAVTask {
   setLocation(lat, lon, locationText = "") {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setLocation: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
-    console.log("setLocation: updating to", lat, lon, locationText);
 
     // Set GEO property (format: "lat;lon")
     if (lat !== null && lon !== null) {
@@ -607,12 +568,8 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setLocation: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setLocation: error", e);
-      throw e;
     });
   }
 
@@ -623,11 +580,9 @@ export class CalDAVTask {
   setCategories(categories) {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setCategories: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
-    console.log("setCategories: updating to", categories);
 
     this.categories = categories || [];
     if (categories && categories.length > 0) {
@@ -645,12 +600,8 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setCategories: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setCategories: error", e);
-      throw e;
     });
   }
 
@@ -661,11 +612,9 @@ export class CalDAVTask {
   setAlarm(minutes) {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setAlarm: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
-    console.log("setAlarm: updating to", minutes, "minutes before");
 
     if (minutes !== null && minutes >= 0) {
       this.alarm = { type: 'relative', minutes: minutes };
@@ -706,12 +655,8 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setAlarm: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setAlarm: error", e);
-      throw e;
     });
   }
 
@@ -722,11 +667,9 @@ export class CalDAVTask {
   setAlarmAbsolute(date) {
     const vtodo = this.rawData?.VCALENDAR?.VTODO;
     if (!vtodo) {
-      console.log("setAlarmAbsolute: rawData not loaded");
       return Promise.reject(new Error("Task data not loaded"));
     }
 
-    console.log("setAlarmAbsolute: updating to", date);
 
     if (date !== null) {
       this.alarm = { type: 'absolute', date: date };
@@ -760,12 +703,8 @@ export class CalDAVTask {
       rawData: this.rawData,
       etag: this.etag,
     }, {timeout: 8000}).then((resp) => {
-      console.log("setAlarmAbsolute: response", JSON.stringify(resp));
       this.etag = "";
       return resp;
-    }).catch((e) => {
-      console.log("setAlarmAbsolute: error", e);
-      throw e;
     });
   }
 

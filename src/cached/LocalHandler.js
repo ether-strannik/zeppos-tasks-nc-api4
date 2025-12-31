@@ -17,22 +17,13 @@ export class LocalHandler {
     }
 
     getTaskList(id) {
-        console.log("=== LocalHandler.getTaskList() ===");
-        console.log("Looking for ID:", id);
-
         const localLists = this.config.get("localLists", []);
-        console.log("localLists from config:", JSON.stringify(localLists));
-        console.log("localLists count:", localLists.length);
-
         const listData = localLists.find(l => l.id === id);
-        console.log("listData found:", listData ? "YES" : "NO");
 
         if (listData) {
-            console.log("Returning LocalListWrapper for:", listData.id, listData.title);
             return new LocalListWrapper(listData, this.config);
         }
 
-        console.log("Returning null - list not found");
         return null;
     }
 }

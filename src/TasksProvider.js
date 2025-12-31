@@ -38,7 +38,6 @@ export class TasksProvider {
             deviceName,
         }, {}).then((data) => {
             if(data.error) throw new Error(data.error);
-            console.log(JSON.stringify(data));
             this._handler = this._createHandler(data);
             return true;
         })

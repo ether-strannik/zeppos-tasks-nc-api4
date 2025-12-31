@@ -53,9 +53,6 @@ export class ZeppTasksSideService {
     if(request.package === "debug_log") {
       if(request.action === "save_log") {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        console.log("=== DEBUG LOG FROM WATCH ===");
-        console.log(request.content);
-        console.log("=== END DEBUG LOG ===");
         // Store in settings so it can be viewed in Zepp app
         settings.settingsStorage.setItem("debug_log", JSON.stringify({
           timestamp: timestamp,
@@ -68,7 +65,6 @@ export class ZeppTasksSideService {
         settings.settingsStorage.setItem("debug_log", "");
         settings.settingsStorage.setItem("phone_debug_log", "");
         this.caldavProxy.debugLog = [];
-        console.log("Debug logs cleared");
         return ctx.response({ data: { result: true } });
       }
       return;

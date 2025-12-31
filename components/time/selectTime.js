@@ -63,7 +63,6 @@ export function setupAlarm(dTime, timer = false) {
         }
         if (id === 0) {
             // cant setup
-            console.log('cant setup id, something wrong');
         } else {
             if (timer) {
                 if (isCreateTimer && exists) {
@@ -87,7 +86,7 @@ export function setupAlarm(dTime, timer = false) {
             });
         }
     } catch (e) {
-        console.log(e);
+        // Error setting up alarm
     }
 }
 

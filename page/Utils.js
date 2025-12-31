@@ -25,9 +25,6 @@ export function log(...args) {
   const timestamp = new Date().toISOString().substr(11, 8);
   const line = `[${timestamp}] ${msg}\n`;
 
-  // Also log to console
-  console.log(msg);
-
   // Buffer logs
   logBuffer.push(line);
 
@@ -55,7 +52,7 @@ export function flushLog() {
       fs.closeSync({ fd: file });
     }
   } catch(e) {
-    console.log("Log write error:", e);
+    // Log write failed
   }
 }
 

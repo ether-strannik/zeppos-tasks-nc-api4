@@ -18,7 +18,6 @@ export class CalDAVProxy {
   log(msg) {
     const timestamp = new Date().toISOString().substring(11, 19);
     const line = `[${timestamp}] ${msg}`;
-    console.log(line);
     this.debugLog.push(line);
     // Keep only last 50 lines
     if (this.debugLog.length > 50) {
@@ -74,7 +73,6 @@ export class CalDAVProxy {
     // Target host is the user's actual Nextcloud server
     const targetHost = this.config.host;
 
-    console.log(`CalDAV ${method} ${proxyUrl} -> ${targetHost}`);
 
     try {
       const resp = await fetch({
@@ -90,10 +88,8 @@ export class CalDAVProxy {
         },
         body,
       });
-      console.log(`CalDAV response: ${resp.status}`);
       return resp;
     } catch(e) {
-      console.log(`CalDAV request error: ${e}`);
       throw e;
     }
   }
@@ -107,12 +103,10 @@ export class CalDAVProxy {
     try {
       const resp = await this.request("GET", id);
       if(resp.status >= 300) {
-        console.log("CalDAV getTask failed:", resp.status);
         return {error: `Server error ${resp.status}`};
       }
       return {id, rawData: this.ics2js(resp.body)};
     } catch(e) {
-      console.log("CalDAV getTask error:", e);
       return {error: `Failed to get task: ${e.message || e}`};
     }
   }
@@ -126,12 +120,10 @@ export class CalDAVProxy {
     try {
       const resp = await this.request("DELETE", id);
       if(resp.status >= 300 && resp.status !== 404) {
-        console.log("CalDAV deleteTask failed:", resp.status);
         return {error: `Server error ${resp.status}`};
       }
       return {result: true};
     } catch(e) {
-      console.log("CalDAV deleteTask error:", e);
       return {error: `Failed to delete task: ${e.message || e}`};
     }
   }
@@ -174,12 +166,10 @@ export class CalDAVProxy {
         });
 
       if(resp.status !== 201) {
-        console.log("CalDAV insertTask failed:", resp.status);
         return {error: `Failed to create task (${resp.status})`};
       }
       return {result: true};
     } catch(e) {
-      console.log("CalDAV insertTask error:", e);
       return {error: `Failed to create task: ${e.message || e}`};
     }
   }
@@ -200,7 +190,6 @@ export class CalDAVProxy {
         });
 
       if(resp.status >= 300) {
-        console.log("CalDAV listTasks failed:", resp.status);
         return {error: `Server error ${resp.status}`};
       }
 
@@ -231,7 +220,6 @@ export class CalDAVProxy {
       // Filter by completion status client-side
       // completed = "all" means return everything, false means only incomplete
       if (completed === "all") {
-        console.log("CalDAV listTasks: returning all", output.length, "tasks");
         return output;
       }
 
@@ -241,10 +229,8 @@ export class CalDAVProxy {
         return !isCompleted;  // Only incomplete tasks
       });
 
-      console.log("CalDAV listTasks: found", output.length, "total,", filtered.length, "incomplete");
       return filtered;
     } catch(e) {
-      console.log("CalDAV listTasks error:", e);
       return {error: `Failed to list tasks: ${e.message || e}`};
     }
   }
@@ -286,18 +272,15 @@ export class CalDAVProxy {
 
       return {result: true};
     } catch(e) {
-      console.log("CalDAV replaceTask error:", e);
       return {error: `Failed to update task: ${e.message || e}`};
     }
   }
 
   async getTaskLists() {
     if(!this.config || !this.config.host) {
-      console.log("CalDAV getTaskLists: config not loaded", this.config);
       return {error: "Config not loaded. Please log in again."};
     }
     if(!this.authHeader) {
-      console.log("CalDAV getTaskLists: no auth header");
       return {error: "Auth not configured. Please log in again."};
     }
 
@@ -310,11 +293,9 @@ export class CalDAVProxy {
         });
 
       if(resp.status >= 300) {
-        console.log("CalDAV getTaskLists failed:", resp.status, resp.body);
         return {error: `Server error ${resp.status}. Check credentials.`};
       }
       if(typeof resp.body !== "string") {
-        console.log("CalDAV getTaskLists: invalid body type", typeof resp.body);
         return {error: "Invalid server response"};
       }
 
@@ -331,11 +312,8 @@ export class CalDAVProxy {
         output.push({id, title});
       }
 
-      console.log("CalDAV getTaskLists: found", output.length, "lists");
-      output.forEach(l => console.log("  List:", l.id, "->", l.title));
       return output;
     } catch(e) {
-      console.log("CalDAV getTaskLists error:", e);
       return {error: `Connection failed: ${e.message || e}`};
     }
   }
@@ -357,7 +335,6 @@ export class CalDAVProxy {
         });
 
       if(resp.status >= 300) {
-        console.log("CalDAV getEventCalendars failed:", resp.status, resp.body);
         return {error: `Server error ${resp.status}. Check credentials.`};
       }
       if(typeof resp.body !== "string") {
@@ -378,10 +355,8 @@ export class CalDAVProxy {
         output.push({id, title});
       }
 
-      console.log("CalDAV getEventCalendars: found", output.length, "calendars");
       return output;
     } catch(e) {
-      console.log("CalDAV getEventCalendars error:", e);
       return {error: `Connection failed: ${e.message || e}`};
     }
   }
@@ -449,7 +424,6 @@ export class CalDAVProxy {
       this.log("SUCCESS " + resp.status);
       return {result: true};
     } catch(e) {
-      console.log("CalDAV insertEvent error:", e);
       return {error: `Failed to create event: ${e.message || e}`};
     }
   }
@@ -535,7 +509,6 @@ export class CalDAVProxy {
       this.proxyUrl = this.config.proxyUrl || DEFAULT_PROXY_URL;
       if(this.proxyUrl.endsWith("/"))
         this.proxyUrl = this.proxyUrl.substring(0, this.proxyUrl.length -1);
-      console.log("Load CalDAV config", this.config.host, this.config.user, "proxy:", this.proxyUrl);
     } catch(e) {
       this.config = {};
       this.proxyUrl = DEFAULT_PROXY_URL;
@@ -550,7 +523,6 @@ export class CalDAVProxy {
     if(!url.endsWith("remote.php/dav/"))
       url += "remote.php/dav/";
 
-    console.log("Trying", url, "via proxy", this.proxyUrl);
     // Validate via proxy with X-Target-Host
     const resp = await fetch({
       method: "GET",
@@ -560,18 +532,15 @@ export class CalDAVProxy {
       }
     });
     if(resp.status !== 401 && resp.status !== 400) {
-      console.log("Reject this url", resp.status);
       settings.settingsStorage.setItem("nextcloud_url_valid", "false");
       return;
     }
 
-    console.log("URL check passed");
     settings.settingsStorage.setItem("nextcloud_url_validate", JSON.stringify(url));
     settings.settingsStorage.setItem("nextcloud_url_valid", "true");
   }
 
   async validateConfig(config) {
-    console.log("Validating CalDAV config:", config);
     try {
       const authHeader = "Basic " + btoa(`${config.user}:${config.password}`);
       // Use proxy with X-Target-Host header
@@ -589,10 +558,8 @@ export class CalDAVProxy {
         }
       });
 
-      console.log("CalDAV validate response:", resp.status);
       settings.settingsStorage.setItem("caldav_validate_result", JSON.stringify(resp.status < 300));
     } catch(e) {
-      console.log("CalDAV validate error:", e);
       settings.settingsStorage.setItem("caldav_validate_result", JSON.stringify(false));
     }
   }

@@ -72,7 +72,6 @@ export class LoginProvider {
             storage.setItem("access_token", result.accessToken);
             storage.setItem("access_token_deadline", result.accessTokenExpire);
         } catch(e) {
-            console.log(e);
             return "Can't authorize due to unknown error.";
         }
 

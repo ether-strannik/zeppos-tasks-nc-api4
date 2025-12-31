@@ -1,4 +1,3 @@
-import {log} from "@zos/utils";
 import hmUI from "@zos/ui";
 import {replace} from "@zos/router";
 import * as alarmMgr from "@zos/alarm";
@@ -201,7 +200,7 @@ Page({
                         });
                     }
                 } catch (e) {
-                    console.log(e);
+                    // Error rendering alarm
                 }
             });
 
@@ -259,6 +258,5 @@ Page({
         hmUI.createWidget(hmUI.widget.PAGE_SCROLLBAR, {});
     },
     onDestroy() {
-        log.log("page on destroy invoke");
     },
 });

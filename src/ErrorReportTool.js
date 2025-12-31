@@ -1,5 +1,5 @@
 export function reportError(e) {
-    console.log(e);
+    // Error reporting disabled
 }
 
 export function reportRequestFailure(fetchParams, status, data, token) {
