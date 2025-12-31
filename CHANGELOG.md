@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **Voice transcription button**: Quick task creation via voice input
+  - Microphone button in header bar (between list title and new task button)
+  - Opens system keyboard in voice mode for speech-to-text
+  - Creates task automatically from transcribed text
+  - List refreshes to show new task immediately
+
+### Changed
+
+
+### Removed
+
+
+---
+
 ## [1.0.0] - 2024-12-30
 
 ### Added
