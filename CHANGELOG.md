@@ -12,8 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Opens system keyboard in voice mode for speech-to-text
   - Creates task automatically from transcribed text
   - List refreshes to show new task immediately
+- **Clear Completed button**: Batch delete all completed tasks
+  - Appears at bottom of task list when completed tasks exist
+  - Shows count of completed tasks to be cleared
+  - Deletes from both CalDAV server and local lists
 
 ### Changed
+- **App ID**: Updated to new registered app ID for Zepp store submission
 
 
 ### Removed
