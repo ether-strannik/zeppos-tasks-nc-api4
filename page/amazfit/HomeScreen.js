@@ -1183,6 +1183,7 @@ class HomeScreen extends ConfiguredListScreen {
     // Build options from params
     const options = {};
     if (params.dueDate) options.dueDate = params.dueDate;
+    if (params.dueTime) options.dueTime = params.dueTime;
     if (params.reminder !== undefined) options.reminder = params.reminder;
     if (params.priority) options.priority = params.priority;
 

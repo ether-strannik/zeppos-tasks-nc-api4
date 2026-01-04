@@ -156,8 +156,12 @@ export class CalDAVProxy {
       }
 
       if (options.dueDate) {
-        // dueDate expected as YYYY-MM-DD string
-        vtodo["DUE"] = options.dueDate.replace(/-/g, "") + "T235959";
+        // dueDate expected as YYYY-MM-DD string, dueTime as HH:MM
+        const dateStr = options.dueDate.replace(/-/g, "");
+        const timeStr = options.dueTime
+          ? options.dueTime.replace(":", "") + "00"  // HH:MM -> HHMMSS
+          : "235959";  // default to end of day
+        vtodo["DUE"] = dateStr + "T" + timeStr;
       }
 
       if (options.reminder !== undefined && options.dueDate) {

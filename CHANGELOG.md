@@ -8,9 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - AIO orchestrator command handler for voice-controlled task creation
-- Task creation with due date, priority, and reminder via voice commands
+- Task creation with due date, due time, priority, and reminder via voice commands
 - Calendar event creation via voice commands (createEvent action)
-- insertTask now accepts options object (dueDate, priority, reminder)
+- insertTask now accepts options object (dueDate, dueTime, priority, reminder)
 
 ---
 

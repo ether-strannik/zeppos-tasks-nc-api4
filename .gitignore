@@ -1,3 +1,12 @@
+# User defined
+.claude/
+.docs/
+.archive/
+.temp/
+.projects/
+CLAUDE.local.md
+
+# Main
 .DS_Store
 node_modules/**
 dist/*
@@ -13,9 +22,6 @@ selenium-debug.log
 *.ntvs*
 *.njsproj
 *.sln
-.claude/
-.docs/
-.archive/
 
 # Additional (optional)
 *.log
