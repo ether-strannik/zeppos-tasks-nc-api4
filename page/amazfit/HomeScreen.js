@@ -1169,6 +1169,9 @@ class HomeScreen extends ConfiguredListScreen {
       case "createEvent":
         this.createEventFromOrchestrator(params);
         break;
+      case "openList":
+        this.openListFromOrchestrator(params);
+        break;
       default:
         hmUI.showToast({ text: t("Unknown command") });
         back();
@@ -1262,6 +1265,62 @@ class HomeScreen extends ConfiguredListScreen {
     }).catch((e) => {
       hideSpinner();
       log("createEventFromOrchestrator error: " + (e.message || e));
+      hmUI.showToast({ text: t("Failed") + ": " + (e.message || e) });
+      setTimeout(() => back(), 1500);
+    });
+  }
+
+  /**
+   * Open task list from AIO orchestrator command
+   */
+  openListFromOrchestrator(params) {
+    log("openListFromOrchestrator: " + JSON.stringify(params));
+    const listName = params.listName;
+
+    tasksProvider.init().then(() => {
+      return tasksProvider.getTaskLists();
+    }).then((lists) => {
+      if (!lists || lists.length === 0) {
+        throw new Error("No task lists available");
+      }
+
+      // Also get local lists
+      const localLists = config.get("localLists", []);
+      const allLists = [...lists, ...localLists];
+
+      let targetList = null;
+
+      if (listName) {
+        // Find matching list by name (case insensitive partial match)
+        const name = listName.toLowerCase();
+        targetList = allLists.find(l => l.title && l.title.toLowerCase().includes(name));
+      }
+
+      if (!targetList) {
+        // Fall back to current list or first list
+        const curId = config.get("cur_list_id");
+        if (curId) {
+          targetList = allLists.find(l => l.id === curId);
+        }
+        if (!targetList) {
+          targetList = allLists[0];
+        }
+      }
+
+      // Set as current list and load it
+      config.set("cur_list_id", targetList.id);
+      this.currentList = targetList;
+      this.taskLists = allLists;
+
+      log("Opening list: " + targetList.title);
+
+      // Load tasks for this list
+      return targetList.getTasks();
+    }).then((taskData) => {
+      this.taskData = taskData;
+      this.build();
+    }).catch((e) => {
+      log("openListFromOrchestrator error: " + (e.message || e));
       hmUI.showToast({ text: t("Failed") + ": " + (e.message || e) });
       setTimeout(() => back(), 1500);
     });
