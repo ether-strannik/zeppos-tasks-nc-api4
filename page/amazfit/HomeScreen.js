@@ -29,6 +29,12 @@ class HomeScreen extends ConfiguredListScreen {
   }
 
   init() {
+    // Handle AIO orchestrator commands
+    if (this.params.command) {
+      this.handleOrchestratorCommand(this.params.command);
+      return;
+    }
+
     // Determine which list to load
     let selectedListId = config.get("cur_list_id");
 
@@ -1146,6 +1152,59 @@ class HomeScreen extends ConfiguredListScreen {
           url: `page/amazfit/HomeScreen`,
         })
       }
+    });
+  }
+
+  /**
+   * Handle commands from AIO orchestrator
+   */
+  handleOrchestratorCommand(command) {
+    const { action, params } = command;
+
+    if (action === "createTask") {
+      this.createTaskFromOrchestrator(params);
+    } else {
+      hmUI.showToast({ text: t("Unknown command") });
+      back();
+    }
+  }
+
+  /**
+   * Create task from AIO orchestrator command
+   */
+  createTaskFromOrchestrator(params) {
+    const hideSpinner = createSpinner();
+
+    tasksProvider.init().then(() => {
+      return tasksProvider.getTaskLists();
+    }).then((lists) => {
+      if (!lists || lists.length === 0) {
+        throw new Error("No task lists available");
+      }
+
+      // Find target list - use specified listId or current/first list
+      let targetList = null;
+      const listId = params.listId || config.get("cur_list_id");
+
+      if (listId) {
+        targetList = lists.find(l => l && (l.id === listId || l.title?.toLowerCase() === listId?.toLowerCase()));
+      }
+
+      if (!targetList) {
+        targetList = lists[0];
+      }
+
+      return targetList.insertTask(params.title);
+    }).then(() => {
+      hideSpinner();
+      hmUI.showToast({ text: `"${params.title}" ${t("created")}` });
+
+      // Return to AIO after short delay
+      setTimeout(() => back(), 1000);
+    }).catch((e) => {
+      hideSpinner();
+      hmUI.showToast({ text: t("Failed") + ": " + (e.message || e) });
+      setTimeout(() => back(), 1500);
     });
   }
 }

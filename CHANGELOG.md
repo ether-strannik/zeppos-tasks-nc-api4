@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- AIO orchestrator command handler for voice-controlled task creation
+
+---
+
+## [1.0.1] - 2025-01-01
+
+### Added
 - **Voice transcription button**: Quick task creation via voice input
   - Microphone button in header bar (between list title and new task button)
   - Opens system keyboard in voice mode for speech-to-text
@@ -19,12 +26,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **App ID**: Updated to new registered app ID for Zepp store submission
-
-
-### Removed
-
-
----
 
 ## [1.0.0] - 2024-12-30
 
