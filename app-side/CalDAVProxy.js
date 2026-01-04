@@ -402,14 +402,34 @@ export class CalDAVProxy {
         "SUMMARY": event.title || "Untitled Event",
       };
 
-      // Add start time (required)
-      if (event.dtstart) {
-        vevent["DTSTART"] = event.dtstart;
-      }
+      // Convert date/time/duration format (from orchestrator) to dtstart/dtend
+      if (event.date) {
+        const dateStr = event.date.replace(/-/g, "");  // "2026-01-04" -> "20260104"
 
-      // Add end time
-      if (event.dtend) {
-        vevent["DTEND"] = event.dtend;
+        if (event.allDay) {
+          // All-day event: use DATE format (no time component)
+          vevent["DTSTART;VALUE=DATE"] = dateStr;
+          vevent["DTEND;VALUE=DATE"] = dateStr;  // Same day for single-day event
+        } else {
+          // Timed event: use DATETIME format
+          const timeStr = event.time ? event.time.replace(":", "") + "00" : "120000";  // "14:00" -> "140000"
+          vevent["DTSTART"] = dateStr + "T" + timeStr;
+
+          // Calculate end time by adding duration
+          const duration = event.duration || 60;  // default 60 minutes
+          const [hours, mins] = event.time ? event.time.split(":").map(Number) : [12, 0];
+          const totalMins = hours * 60 + mins + duration;
+          const endHours = Math.floor(totalMins / 60) % 24;
+          const endMins = totalMins % 60;
+          const endTimeStr = endHours.toString().padStart(2, "0") + endMins.toString().padStart(2, "0") + "00";
+          vevent["DTEND"] = dateStr + "T" + endTimeStr;
+        }
+      } else if (event.dtstart) {
+        // Direct dtstart/dtend format (from manual event creation)
+        vevent["DTSTART"] = event.dtstart;
+        if (event.dtend) {
+          vevent["DTEND"] = event.dtend;
+        }
       }
 
       // Add optional fields
