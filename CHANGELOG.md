@@ -14,7 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Calendar event creation now converts date/time/duration to proper DTSTART/DTEND format
-- All-day events use DATE format (no time component)
+- All-day events use DATE format with correct exclusive DTEND (next day)
+- Auto-select first calendar if none specified
+- Calendar name matching from voice command (e.g., "on work calendar")
 
 ---
 

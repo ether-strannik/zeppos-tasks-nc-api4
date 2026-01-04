@@ -390,6 +390,31 @@ export class CalDAVProxy {
     if(!this.authHeader)
       return {error: "Auth not configured"};
 
+    // Auto-select calendar if none specified
+    if(!calendarId) {
+      const calendars = await this.getEventCalendars();
+      if(calendars.error) return calendars;
+      if(!calendars || calendars.length === 0)
+        return {error: "No calendars found"};
+
+      // If calendarName provided, find matching calendar
+      if(event.calendarName) {
+        const name = event.calendarName.toLowerCase();
+        const match = calendars.find(c => c.title.toLowerCase().includes(name));
+        if(match) {
+          calendarId = match.id;
+          this.log("Matched calendar by name: " + match.title);
+        } else {
+          // Fallback to first if no match
+          calendarId = calendars[0].id;
+          this.log("No match for '" + event.calendarName + "', using: " + calendars[0].title);
+        }
+      } else {
+        calendarId = calendars[0].id;
+        this.log("Auto-selected calendar: " + calendars[0].title);
+      }
+    }
+
     try {
       const eventFile = `${Math.round(Math.random() * 10e15)}-${Date.now()}.ics`;
       const now = this.currentTimeString();
@@ -408,8 +433,17 @@ export class CalDAVProxy {
 
         if (event.allDay) {
           // All-day event: use DATE format (no time component)
+          // DTEND is exclusive, so next day for single-day event
           vevent["DTSTART;VALUE=DATE"] = dateStr;
-          vevent["DTEND;VALUE=DATE"] = dateStr;  // Same day for single-day event
+          // Calculate next day for DTEND
+          const year = parseInt(dateStr.substring(0, 4));
+          const month = parseInt(dateStr.substring(4, 6)) - 1;
+          const day = parseInt(dateStr.substring(6, 8));
+          const nextDay = new Date(year, month, day + 1);
+          const nextDayStr = nextDay.getFullYear().toString() +
+            (nextDay.getMonth() + 1).toString().padStart(2, "0") +
+            nextDay.getDate().toString().padStart(2, "0");
+          vevent["DTEND;VALUE=DATE"] = nextDayStr;
         } else {
           // Timed event: use DATETIME format
           const timeStr = event.time ? event.time.replace(":", "") + "00" : "120000";  // "14:00" -> "140000"

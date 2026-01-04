@@ -31,6 +31,7 @@ class HomeScreen extends ConfiguredListScreen {
   init() {
     // Handle AIO orchestrator commands
     if (this.params.command) {
+      log("Received orchestrator command: " + JSON.stringify(this.params.command));
       this.handleOrchestratorCommand(this.params.command);
       return;
     }
@@ -1229,17 +1230,22 @@ class HomeScreen extends ConfiguredListScreen {
    * Create calendar event from AIO orchestrator command
    */
   createEventFromOrchestrator(params) {
+    log("createEventFromOrchestrator: " + JSON.stringify(params));
     const hideSpinner = createSpinner();
 
     tasksProvider.init().then(() => {
+      log("tasksProvider.init() success");
       // Build event object
       const event = {
         title: params.title,
         date: params.date,
         time: params.time || "12:00",
-        duration: params.duration || 60
+        duration: params.duration || 60,
+        allDay: params.allDay || false,
+        calendarName: params.calendarName || null
       };
 
+      log("Sending insert_event: " + JSON.stringify(event));
       return messageBuilder.request({
         package: "caldav_proxy",
         action: "insert_event",
@@ -1248,12 +1254,14 @@ class HomeScreen extends ConfiguredListScreen {
       }, { timeout: 10000 });
     }).then((result) => {
       hideSpinner();
+      log("insert_event result: " + JSON.stringify(result));
       if (result.error) throw new Error(result.error);
 
       hmUI.showToast({ text: `"${params.title}" ${t("scheduled")}` });
       setTimeout(() => back(), 1000);
     }).catch((e) => {
       hideSpinner();
+      log("createEventFromOrchestrator error: " + (e.message || e));
       hmUI.showToast({ text: t("Failed") + ": " + (e.message || e) });
       setTimeout(() => back(), 1500);
     });
