@@ -1161,11 +1161,16 @@ class HomeScreen extends ConfiguredListScreen {
   handleOrchestratorCommand(command) {
     const { action, params } = command;
 
-    if (action === "createTask") {
-      this.createTaskFromOrchestrator(params);
-    } else {
-      hmUI.showToast({ text: t("Unknown command") });
-      back();
+    switch (action) {
+      case "createTask":
+        this.createTaskFromOrchestrator(params);
+        break;
+      case "createEvent":
+        this.createEventFromOrchestrator(params);
+        break;
+      default:
+        hmUI.showToast({ text: t("Unknown command") });
+        back();
     }
   }
 
@@ -1174,6 +1179,12 @@ class HomeScreen extends ConfiguredListScreen {
    */
   createTaskFromOrchestrator(params) {
     const hideSpinner = createSpinner();
+
+    // Build options from params
+    const options = {};
+    if (params.dueDate) options.dueDate = params.dueDate;
+    if (params.reminder !== undefined) options.reminder = params.reminder;
+    if (params.priority) options.priority = params.priority;
 
     tasksProvider.init().then(() => {
       return tasksProvider.getTaskLists();
@@ -1194,12 +1205,51 @@ class HomeScreen extends ConfiguredListScreen {
         targetList = lists[0];
       }
 
-      return targetList.insertTask(params.title);
+      return targetList.insertTask(params.title, options);
     }).then(() => {
       hideSpinner();
-      hmUI.showToast({ text: `"${params.title}" ${t("created")}` });
+
+      // Build confirmation message
+      let msg = `"${params.title}" ${t("created")}`;
+      if (params.dueDate) msg += ` (${params.dueDate})`;
+
+      hmUI.showToast({ text: msg });
 
       // Return to AIO after short delay
+      setTimeout(() => back(), 1000);
+    }).catch((e) => {
+      hideSpinner();
+      hmUI.showToast({ text: t("Failed") + ": " + (e.message || e) });
+      setTimeout(() => back(), 1500);
+    });
+  }
+
+  /**
+   * Create calendar event from AIO orchestrator command
+   */
+  createEventFromOrchestrator(params) {
+    const hideSpinner = createSpinner();
+
+    tasksProvider.init().then(() => {
+      // Build event object
+      const event = {
+        title: params.title,
+        date: params.date,
+        time: params.time || "12:00",
+        duration: params.duration || 60
+      };
+
+      return messageBuilder.request({
+        package: "caldav_proxy",
+        action: "insert_event",
+        calendarId: config.get("cur_calendar_id") || null,
+        event
+      }, { timeout: 10000 });
+    }).then((result) => {
+      hideSpinner();
+      if (result.error) throw new Error(result.error);
+
+      hmUI.showToast({ text: `"${params.title}" ${t("scheduled")}` });
       setTimeout(() => back(), 1000);
     }).catch((e) => {
       hideSpinner();

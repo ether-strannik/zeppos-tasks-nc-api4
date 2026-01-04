@@ -38,7 +38,7 @@ export class CalDAVProxy {
     let response = {error: "unknown action"};
     switch(request.action) {
       case "insert_task":
-        response = await this.insertTask(request.listId, request.title, request.parentUid);
+        response = await this.insertTask(request.listId, request.title, request.parentUid, request.options);
         break;
       case "delete_task":
         response = await this.deleteTask(request.id);
@@ -128,7 +128,7 @@ export class CalDAVProxy {
     }
   }
 
-  async insertTask(listId, title, parentUid = null) {
+  async insertTask(listId, title, parentUid = null, options = {}) {
     if(!this.config || !this.config.host)
       return {error: "Config not loaded"};
     if(!this.authHeader)
@@ -148,6 +148,25 @@ export class CalDAVProxy {
       // Add RELATED-TO for subtasks
       if (parentUid) {
         vtodo["RELATED-TO"] = parentUid;
+      }
+
+      // Add optional properties from AIO orchestrator
+      if (options.priority && options.priority > 0) {
+        vtodo["PRIORITY"] = options.priority.toString();
+      }
+
+      if (options.dueDate) {
+        // dueDate expected as YYYY-MM-DD string
+        vtodo["DUE"] = options.dueDate.replace(/-/g, "") + "T235959";
+      }
+
+      if (options.reminder !== undefined && options.dueDate) {
+        // reminder is minutes before due
+        vtodo["VALARM"] = {
+          "ACTION": "DISPLAY",
+          "TRIGGER": `-PT${options.reminder}M`,
+          "DESCRIPTION": title
+        };
       }
 
       const taskBody = this.js2ics({
