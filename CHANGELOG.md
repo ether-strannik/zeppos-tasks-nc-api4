@@ -12,6 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Calendar event creation via voice commands (createEvent action)
 - insertTask now accepts options object (dueDate, dueTime, priority, reminder)
 
+### Fixed
+- Clear Completed button now appears immediately after marking a task complete
+
 ---
 
 ## [1.0.1] - 2025-01-01

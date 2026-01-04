@@ -727,6 +727,11 @@ class HomeScreen extends ConfiguredListScreen {
         }
 
         updateStatus();
+
+        // Rebuild to update "Clear Completed" button
+        if (completed) {
+          setTimeout(() => this.rebuild(), 100);
+        }
       }
     });
 
